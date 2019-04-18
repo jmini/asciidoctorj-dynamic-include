@@ -1,0 +1,3 @@
+== Dynamic Include Test
+
+include::dynamic:pages/*.adoc[]

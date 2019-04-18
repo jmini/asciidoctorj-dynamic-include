@@ -1,0 +1,5 @@
+== Dynamic Include Test 1
+
+:dynamic-include-order: order1.txt
+
+include::dynamic:**/*.adoc[]

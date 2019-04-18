@@ -1,0 +1,17 @@
+= Maven example
+
+This example describes how to use `dynamic-include` in a maven build.
+The extension is published on maven central and can be downloaded during the build.
+
+//tag::maven-integration[]
+== Integration in a maven build
+
+You need to declare `fr.jmini.asciidoctorj:dynamic-include` as a dependency for the `org.asciidoctor:asciidoctor-maven-plugin` plugin.
+Your `<build>` section could looks like this:
+
+[source,xml]
+----
+include::pom.xml[tags=mvn-plugin,indent=0]
+----
+
+//end::maven-integration[]

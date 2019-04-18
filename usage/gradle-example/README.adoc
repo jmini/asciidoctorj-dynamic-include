@@ -1,0 +1,19 @@
+= Gradle example
+
+This example describes how to use `dynamic-include` in a gradle build.
+The extension is published on maven central and can be downloaded during the build.
+
+//tag::gradle-integration[]
+== Integration in a gradle build
+
+The `fr.jmini.asciidoctorj:dynamic-include` jar can be declared as dependency of the `asciidoctor` task:
+
+[source,gralde]
+.Configuration of the asciidoctor task in a gradle build
+----
+include::build.gradle[tags=task,indent=0]
+----
+<1> Dependency declaration
+<2> This kind of setting is important to force asciidoctor to produce more logs
+
+//end::gradle-integration[]

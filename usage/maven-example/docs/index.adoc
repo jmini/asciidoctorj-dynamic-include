@@ -1,0 +1,16 @@
+= Maven example
+
+Lorem {bla} ipusm
+
+Sed in risus rutrum, <<commodo>> quam nec, viverra nulla.
+
+Phasellus lacinia <<other.adoc#,pellentesque>> odio ac facilisis.
+
+2. Lorem
+3. Ipsum
+
+Phasellus aliquam ullamcorper ligula porttitor ullamcorper.
+
+include::test.adoc[]
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.

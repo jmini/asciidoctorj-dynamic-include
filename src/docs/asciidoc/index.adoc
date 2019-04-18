@@ -1,0 +1,167 @@
+:rootdir: ../../..
+:github-readme: {rootdir}/README.adoc
+:srcdir: {rootdir}/src/
+:listing-caption: Listing
+:revdate: {project-builddate}
+:revnumber: {project-version}
+
+include::{github-readme}[tags=vardef]
+
+:projectpage: https://github.com/{gh-repo-owner}/{gh-repo-name}
+
+include::{github-readme}[tags=header]
+
+== URLs
+
+* link:{homepage}[Project home] (this page)
+* link:{projectpage}[GitHub project]
+* link:{issues}[Issue tracker]
+
+TIP: Do you want to improve this page? Please git-link:self[edit it on GitHub, edit].
+
+== Description
+
+When AsciidoctorJ converts a document, it writes issues to the console (malformed AsciiDoc constructs, missing attribute, errors…).
+This extension collect those issues and to write them into a single log file: `build/asciidoctor.log`.
+This file can be then used by other tools.
+For example the Jenkins link:https://wiki.jenkins.io/x/1YTeCQ[Warnings Next Generation Plugin], can collect the asciidoctor issues in order to display them as part of the job result.
+
+=== AsciidoctorJ version
+
+The latest version of this extension is built and tested with version `{asciidoctorj-version}` of `org.asciidoctor:asciidoctorj`.
+
+== Usage
+
+The extension is published on maven central and can be directly consumed from a gradle build.
+
+include::{rootdir}/usage/gradle-example/README.adoc[leveloffset=1, tags=gradle-integration]
+
+For a complete example, see: git-link:usage/gradle-example/build.gradle[build.gradle, branch="master"]
+
+=== Output example
+
+The content of the `build/asciidoc.adoc` example can look like this:
+
+.Example content for the log file
+----
+/tmp/file.adoc|5|ERROR|include file not found: /tmp/other.adoc
+/tmp/file.adoc|7|HIGH|list item index: expected 1, got 8
+UNKNOWN|0|HIGH|skipping reference to missing attribute: bla
+----
+
+=== Integration with Jenkins
+
+You need to install the link:https://wiki.jenkins.io/x/1YTeCQ[Warnings Next Generation Plugin].
+
+In "Configure System" page of Jenkins, search for the "Groovy Based Warnings Parsers" section and create a new "Groovy Based Warnings Parsers" item:
+
+image:jenkins_configure.png[Groovy Based Warnings Parsers configuration]
+
+Configure the item with following values:
+
+* Name: `Asciidoctor Logs`
+* Id: `asciidoctor`
+* Regular Expression: `+(.*)\|(\d+)\|(.*)\|(.*)+`
+
+And following mapping script:
+
+.Groovy script to create log entries
+----
+import edu.hm.hafner.analysis.Severity
+return builder
+    .setFileName(matcher.group(1))
+    .setLineStart(Integer.parseInt(matcher.group(2)))
+    .setSeverity(Severity.valueOf(matcher.group(3)))
+    .setMessage(matcher.group(4))
+    .setCategory("Asciidoctor")
+    .buildOptional();
+----
+
+In your build configuration, in the "Post-build Actions" section, add a "Record compiler warnings and static analysis results" item:
+
+image:build_configure.png[Record compiler warnings and static analysis results configuration]
+
+Configure the item with following values:
+
+* Tool: `Groovy Parser`
+* Parser: `Asciidoctor Logs`
+* Report File Pattern: `build/asciidoctor.log`
+
+Here the same configuration as Jenkins pipeline script:
+
+.Jenkins pipeline configuration
+----
+recordIssues(tools: [groovyScript(parserId: 'asciidoctor', pattern: 'build/asciidoctor.log')])
+----
+
+== Source Code
+
+As for any grade plugin, the source code of the plugin is available in the git-link:src/[src/] folder.
+
+=== Build
+
+This project is using gradle.
+
+Command to build the sources locally:
+
+----
+./gradlew build
+----
+
+Command to deploy to your local maven repository:
+
+----
+./gradlew publishToMavenLocal
+----
+
+Command to build the documentation page:
+
+----
+./gradlew asciidoctor
+----
+
+The output of this command is an HTML page located at `<git repo root>/build/docs/html5/index.html`.
+
+==== For project maintainers
+
+`signing.gnupg.keyName` and `signing.gnupg.passphrase` are expected to be set in your local `gradle.properties` file to be able to sign.
+`sonatypeUser` and `sonatypePassword` are expected to be set in order to be able to publish to a distant repository.
+					
+Command to build and publish the result in a distant maven repository:
+
+----
+./gradlew publish
+----
+
+Command to upload the documentation page on GitHub pages:
+
+----
+./gradlew gitPublishPush
+----
+
+Command to perform a release:
+
+----
+./gradlew release -Prelease.useAutomaticVersion=true
+----
+
+==== Using ssh-agent
+
+Some tasks requires to push into the distant git repository (release task or updating the `gh-pages` branch).
+If they are failing with errors like this:
+----
+org.eclipse.jgit.api.errors.TransportException: ... Permission denied (publickey).
+---- 
+
+Then `ssh-agent` can be used.
+----
+eval `ssh-agent -s`
+ssh-add ~/.ssh/id_rsa
+----
+(link:https://superuser.com/a/990447/[source] for this approach)
+
+
+include::{github-readme}[tags=contact-section]
+
+include::{github-readme}[tags=license-section]
+

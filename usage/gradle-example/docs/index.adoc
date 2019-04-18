@@ -1,0 +1,22 @@
+= Gradle example
+
+Lorem {bla} ipusm
+
+include::other.adoc[]
+
+8. Lorem
+2. Ipsum
+5. Dolor
+
+Lorem consectetur adipiscing elit.
+
+[source,java]
+----
+public static void main(String[] args) { // <1>
+    System.out.println("Hello World");
+}
+----
+<1> Main method
+<2> Print command
+
+Lorem ipsum dolor
