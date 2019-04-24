@@ -16,8 +16,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.asciidoctor.ast.Document;
@@ -28,9 +31,12 @@ import fr.jmini.utils.substringfinder.Range;
 import fr.jmini.utils.substringfinder.SubstringFinder;
 
 public class DynamicIncludeProcessor extends IncludeProcessor {
-
     private static final String PREFIX = "dynamic:";
+
+    private static final Pattern TITLE_REGEX = Pattern.compile("(\\/?\\/? *)={1,5}(.+)");
+
     private static final SubstringFinder DOUBLE_ANGLED_BRACKET_FINDER = SubstringFinder.define("<<", ">>");
+    private static final SubstringFinder SINGLE_BRACKET_FINDER = SubstringFinder.define("[", "]");
 
     public DynamicIncludeProcessor() {
         super();
@@ -88,16 +94,33 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         } else {
             orderList = Collections.emptyList();
         }
-        List<Path> list = sortList(files, orderList, p -> dir.relativize(p)
-                .toString());
+
+        String idprefix = document.getAttribute("idprefix", "_")
+                .toString();
+        String idseparator = document.getAttribute("idseparator", "_")
+                .toString();
+
+        List<FileHolder> contentFiles = files.stream()
+                .map(p -> createFileHolder(dir, p, idprefix, idseparator))
+                .collect(Collectors.toList());
+
+        List<FileHolder> list = sortList(contentFiles, orderList, FileHolder::getKey);
 
         for (int i = list.size() - 1; i >= 0; i--) {
-            Path path = list.get(i);
+            FileHolder item = list.get(i);
+            Path path = item.getPath();
             File file = path.toFile();
 
-            String content = readFile(path);
+            String header = item.getContent()
+                    .substring(0, item.getTitleStart());
+
+            String prefix = item.getTitleType() == TitleType.PRESENT ? "" : "[#" + item.getTitleId() + "]\n";
+
+            String content = prefix + item.getContent()
+                    .substring(item.getTitleStart());
             content = replaceXrefDoubleAngledBracketLinks(content, list, dir, path, root);
-            content = replaceXrefInlineLinks(content, list);
+            content = replaceXrefInlineLinks(content, list, dir, path, root);
+
             reader.push_include(content, file.getName(), path.toString(), 1, attributes);
         }
     }
@@ -144,18 +167,54 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return index;
     }
 
-    static String readFile(Path file) {
-        String content;
-        try {
-            content = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new IllegalStateException("Could not read file: " + file, e);
+    public static FileHolder createFileHolder(Path dir, Path p, String idprefix, String idseparator) {
+        String key = dir.relativize(p)
+                .toString();
+        String content = readFile(p);
+
+        String title;
+        String titleId;
+        int titleStart;
+        int titleEnd;
+        TitleType titleType;
+        Matcher titleMatcher = TITLE_REGEX.matcher(content);
+        if (titleMatcher.find()) {
+            titleType = titleMatcher.group(1)
+                    .isEmpty() ? TitleType.PRESENT : TitleType.COMMENTED;
+            title = titleMatcher.group(2)
+                    .trim();
+            titleId = computeTitleId(title, idprefix, idseparator);
+            titleStart = titleMatcher.start();
+            titleEnd = titleMatcher.end();
+        } else {
+            titleType = TitleType.ABSENT;
+            title = null;
+            titleId = computeTitleId(key, idprefix, idseparator);
+            titleStart = 0;
+            titleEnd = 0;
         }
-        return content;
+
+        return new FileHolder(p, key, content, titleType, title, titleId, titleStart, titleEnd);
     }
 
-    public static String replaceXrefDoubleAngledBracketLinks(String content, List<Path> list, Path dir, Path currentPath, Path currentRoot) {
+    public static String computeTitleId(String text, String idprefix, String idseparator) {
+        StringBuilder sb = new StringBuilder();
+        if (idprefix != null) {
+            sb.append(idprefix);
+        }
+        String anchor = text;
+        anchor = anchor.replace("/", "");
+        anchor = anchor.replaceAll("[^\\w]", " ");
+        anchor = anchor.trim();
+        anchor = anchor.toLowerCase();
+        if (idseparator != null) {
+            anchor = anchor.replaceAll("\\s+", idseparator);
+        }
+        sb.append(anchor);
+        return sb.toString();
+    }
+
+    public static String replaceXrefDoubleAngledBracketLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot) {
         if (list.isEmpty()) {
             return content;
         }
@@ -180,11 +239,29 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                     file = currentPath.getParent()
                             .resolve(fileName);
                 }
-                if (!list.contains(file)) {
+                if (!isFilePresent(list, file)) {
                     sb.append(dir.relativize(file)
                             .toString());
                 }
-                sb.append(rangeContent.substring(hashPosition));
+                int commaPosition = rangeContent.indexOf(",", hashPosition);
+                if (commaPosition > -1) {
+                    sb.append("#");
+                    String anchor = rangeContent.substring(hashPosition + 1, commaPosition);
+                    if (anchor.trim()
+                            .isEmpty()) {
+                        Optional<FileHolder> findFile = findByFile(list, file);
+                        if (findFile.isPresent()) {
+                            sb.append(findFile.get()
+                                    .getTitleId());
+                        }
+                    } else {
+                        sb.append(anchor);
+                    }
+                } else {
+                    commaPosition = hashPosition;
+                }
+
+                sb.append(rangeContent.substring(commaPosition));
             } else {
                 sb.append(rangeContent);
             }
@@ -199,16 +276,94 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return sb.toString();
     }
 
-    public static String replaceXrefInlineLinks(String content, List<Path> list) {
+    public static String replaceXrefInlineLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot) {
         if (list.isEmpty()) {
             return content;
         }
         StringBuilder sb = new StringBuilder();
-        int startAt = 0;
 
+        int startAt = 0;
+        int findXref = content.indexOf("xref:", startAt);
+        while (findXref > -1) {
+
+            Optional<Range> find = SINGLE_BRACKET_FINDER.nextRange(content, findXref);
+            if (find.isPresent()) {
+                Range range = find.get();
+                String target = content.substring(findXref + 5, range.getRangeStart());
+                if (target.matches("\\S+")) {
+
+                    sb.append(content.substring(startAt, findXref));
+                    sb.append("xref:");
+
+                    int hashPosition = target.indexOf("#");
+                    String fileName = hashPosition > -1 ? target.substring(0, hashPosition) : target;
+
+                    Path file;
+                    if (fileName.startsWith("{root}")) {
+                        file = currentRoot.resolve(fileName.substring(6));
+                    } else {
+                        file = currentPath.getParent()
+                                .resolve(fileName);
+                    }
+                    Optional<FileHolder> findFile = findByFile(list, file);
+                    if (!findFile.isPresent()) {
+                        sb.append(dir.relativize(file)
+                                .toString());
+                    }
+                    if (hashPosition > -1) {
+                        String anchor = target.substring(hashPosition + 1);
+                        if (anchor.trim()
+                                .isEmpty() && findFile.isPresent()) {
+                            sb.append("#");
+                            sb.append(findFile.get()
+                                    .getTitleId());
+                        } else {
+                            sb.append("#");
+                            sb.append(anchor);
+                        }
+                    } else if (findFile.isPresent()) {
+                        sb.append("#");
+                        sb.append(findFile.get()
+                                .getTitleId());
+                    }
+
+                    sb.append(content.substring(range.getRangeStart(), range.getRangeEnd()));
+                    startAt = range.getRangeEnd();
+                } else {
+                    startAt = findXref;
+                }
+            } else {
+                startAt = findXref;
+            }
+
+            findXref = content.indexOf("xref:", startAt);
+        }
         if (startAt < content.length()) {
             sb.append(content.substring(startAt));
         }
         return sb.toString();
+    }
+
+    private static boolean isFilePresent(List<FileHolder> list, Path file) {
+        Optional<FileHolder> find = findByFile(list, file);
+        return find.isPresent();
+    }
+
+    private static Optional<FileHolder> findByFile(List<FileHolder> list, Path file) {
+        Optional<FileHolder> find = list.stream()
+                .filter(i -> Objects.equals(i.getPath(), file))
+                .findAny();
+        return find;
+    }
+
+    static String readFile(Path file) {
+        String content;
+        try {
+            content = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new IllegalStateException("Could not read file: " + file, e);
+        }
+        return content;
     }
 }

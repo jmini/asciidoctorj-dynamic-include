@@ -5,7 +5,9 @@ endif::[]
 
 == Gradle example
 
-include::dynamic:pages/*.adoc
+include::dynamic:pages/*.adoc[]
+
+xref:#_gradle_example[test]
 
 Links:
 

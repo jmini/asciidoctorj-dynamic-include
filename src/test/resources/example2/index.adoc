@@ -1,3 +1,4 @@
+
 // {root} points to the example root folder:
 ifndef::root[]
 :root:

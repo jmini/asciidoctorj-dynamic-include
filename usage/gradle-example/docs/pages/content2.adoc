@@ -10,8 +10,14 @@ Lorem dolor.
 8. one
 7. two
 
-<<{root}pages/content1.adoc#, link 1>>
+X <<{root}pages/content1.adoc#, link 1>>
+
+X <<{root}pages/content1.adoc#>>
 
 <<{root}pages/content1.adoc#content-1, link 1 content>>
+
+Lorem dolor.
+
+=== pages/content1.adoc
 
 Lorem dolor.
