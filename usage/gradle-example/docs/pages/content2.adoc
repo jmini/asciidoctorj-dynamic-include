@@ -1,3 +1,7 @@
+// {root} points to the docs folder:
+ifndef::root[]
+:root: ../
+endif::[]
 
 === Content 2
 
@@ -6,6 +10,8 @@ Lorem dolor.
 8. one
 7. two
 
-<<content1.adoc#, link 1>>
+<<{root}pages/content1.adoc#, link 1>>
+
+<<{root}pages/content1.adoc#content-1, link 1 content>>
 
 Lorem dolor.

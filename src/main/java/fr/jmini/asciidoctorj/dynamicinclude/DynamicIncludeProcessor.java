@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -23,9 +24,13 @@ import org.asciidoctor.ast.Document;
 import org.asciidoctor.extension.IncludeProcessor;
 import org.asciidoctor.extension.PreprocessorReader;
 
+import fr.jmini.utils.substringfinder.Range;
+import fr.jmini.utils.substringfinder.SubstringFinder;
+
 public class DynamicIncludeProcessor extends IncludeProcessor {
 
     private static final String PREFIX = "dynamic:";
+    private static final SubstringFinder DOUBLE_ANGLED_BRACKET_FINDER = SubstringFinder.define("<<", ">>");
 
     public DynamicIncludeProcessor() {
         super();
@@ -51,13 +56,18 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         if (attributes.containsKey("order")) {
             order = attributes.get("order")
                     .toString();
-        } else if (document.getAttributes()
-                .containsKey("dynamic-include-order")) {
-            order = document.getAttributes()
-                    .get("dynamic-include-order")
+        } else if (document.hasAttribute("dynamic-include-order")) {
+            order = document.getAttribute("dynamic-include-order")
                     .toString();
         } else {
             order = null;
+        }
+        Path root;
+        if (document.hasAttribute("root")) {
+            root = dir.resolve(document.getAttribute("root")
+                    .toString());
+        } else {
+            root = dir;
         }
 
         List<String> orderList;
@@ -86,6 +96,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             File file = path.toFile();
 
             String content = readFile(path);
+            content = replaceXrefDoubleAngledBracketLinks(content, list, dir, path, root);
+            content = replaceXrefInlineLinks(content, list);
             reader.push_include(content, file.getName(), path.toString(), 1, attributes);
         }
     }
@@ -141,5 +153,62 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             throw new IllegalStateException("Could not read file: " + file, e);
         }
         return content;
+    }
+
+    public static String replaceXrefDoubleAngledBracketLinks(String content, List<Path> list, Path dir, Path currentPath, Path currentRoot) {
+        if (list.isEmpty()) {
+            return content;
+        }
+        StringBuilder sb = new StringBuilder();
+
+        int startAt = 0;
+        Optional<Range> find = DOUBLE_ANGLED_BRACKET_FINDER.nextRange(content);
+        while (find.isPresent()) {
+            Range range = find.get();
+
+            sb.append(content.substring(startAt, range.getRangeStart()));
+            sb.append("<<");
+            String rangeContent = content.substring(range.getContentStart(), range.getContentEnd());
+            int hashPosition = rangeContent.indexOf("#");
+            if (hashPosition > -1) {
+                String fileName = rangeContent.substring(0, hashPosition);
+
+                Path file;
+                if (fileName.startsWith("{root}")) {
+                    file = currentRoot.resolve(fileName.substring(6));
+                } else {
+                    file = currentPath.getParent()
+                            .resolve(fileName);
+                }
+                if (!list.contains(file)) {
+                    sb.append(dir.relativize(file)
+                            .toString());
+                }
+                sb.append(rangeContent.substring(hashPosition));
+            } else {
+                sb.append(rangeContent);
+            }
+            sb.append(">>");
+
+            startAt = range.getRangeEnd();
+            find = DOUBLE_ANGLED_BRACKET_FINDER.nextRange(content, startAt);
+        }
+        if (startAt < content.length()) {
+            sb.append(content.substring(startAt));
+        }
+        return sb.toString();
+    }
+
+    public static String replaceXrefInlineLinks(String content, List<Path> list) {
+        if (list.isEmpty()) {
+            return content;
+        }
+        StringBuilder sb = new StringBuilder();
+        int startAt = 0;
+
+        if (startAt < content.length()) {
+            sb.append(content.substring(startAt));
+        }
+        return sb.toString();
     }
 }

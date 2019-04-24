@@ -1,9 +1,24 @@
+// {root} points to the example root folder:
+ifndef::root[]
+:root: ../
+endif::[]
 
 === Content 1
 
 Lorem ipsum.
 
-8. one
-7. two
+1. one
+2. two
+
+Test <<content2.adoc#_content_2, link>> to other page.
+
+See <<{root}content/content2.adoc#_content_2, link>>.
+
+==== Section 1
 
 Lorem ipsum.
+
+==== Section 2
+
+Lorem ipsum.
+

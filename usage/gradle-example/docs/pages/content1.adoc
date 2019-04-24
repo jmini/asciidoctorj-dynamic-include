@@ -1,3 +1,7 @@
+// {root} points to the docs folder:
+ifndef::root[]
+:root: ../
+endif::[]
 
 === Content 1
 
@@ -8,4 +12,41 @@ Lorem ipsum.
 
 <<content2.adoc#, link 2>>
 
+Test <<#_test, Content 1 Link>>
+
+XX <<content2.adoc#content-2, Content 2 Link>> XXX
+
 Lorem ipsum.
+  
+xxx
+
+xxx
+
+xxx
+
+xxx
+
+xxx
+
+xxx
+
+xxx
+
+xxx
+
+xxx
+
+xxx
+
+xxx
+
+xxx
+
+xxx
+
+xxx
+
+xxx
+
+
+==== Test

@@ -1,3 +1,13 @@
+// {root} points to the docs folder:
+ifndef::root[]
+:root:
+endif::[]
+
 == Gradle example
 
-include::dynamic:pages/*.adoc[]
+include::dynamic:pages/*.adoc
+
+Links:
+
+* Test <<pages/content1.adoc#, Content 1>>
+* Test <<pages/content1.adoc#_test, Content 1 Test>>

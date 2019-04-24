@@ -1,14 +1,19 @@
+// {root} points to the example root folder:
+ifndef::root[]
+:root: ../
+endif::[]
 
 === Content 2
 
-
-docfile: {docfile}
-docdir: {docdir}
-
-
 Lorem dolor.
 
-8. one
-7. two
+* a
+* b
+
+See <<{root}content/content1.adoc#_content_1, content 1>>.
+
+See <<{root}content/content1.adoc#_section_1, section 1>>.
+
+See <<{root}content/content1.adoc#_section_2, section 2>>.
 
 Lorem dolor.

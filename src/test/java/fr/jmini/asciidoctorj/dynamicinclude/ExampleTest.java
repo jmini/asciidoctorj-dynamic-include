@@ -9,6 +9,8 @@
 **********************************************************************/
 package fr.jmini.asciidoctorj.dynamicinclude;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -59,10 +61,11 @@ public class ExampleTest {
         OptionsBuilder optionsBuilder = OptionsBuilder.options()
                 .attributes(attributesBuilder)
                 .baseDir(exampleFolder.toFile())
+                .option("sourcemap", true)
                 .docType("article")
                 .safe(SafeMode.UNSAFE);
         String html = asciidoctor.convert(content, optionsBuilder);
 
-        //        assertThat(html).isEqualTo(expected);
+        assertThat(html).isEqualTo(expected);
     }
 }

@@ -46,6 +46,7 @@ test {
 }
 
 dependencies {
+    implementation 'fr.jmini.utils:substring-finder:1.0.1'
     implementation "org.asciidoctor:asciidoctorj:$asciidoctorjVersion"
 
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
