@@ -10,43 +10,47 @@ Lorem ipsum.
 8. one
 7. two
 
-<<content2.adoc#, link 2>>
-
-Test <<#_test, Content 1 Link>>
-
-XX <<content2.adoc#content-2, Content 2 Link>> XXX
+* Test <<test, Content 1 Test>>
+* Test content1 <<content1.adoc#test, Content 1 Test>>
+* Test root <<{root}pages/content1.adoc#test, Content 1 Test>>
+* Double square brackets: <<{root}pages/content2.adoc#, Content 2>>
+* Double square brackets: <<{root}pages/content2.adoc#content-2, Content 2 content 2>>
+* Double square brackets: <<{root}pages/footer.adoc#, Footer>>
 
 Lorem ipsum.
   
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
+Lorem ipsum.
 
-xxx
-
+Lorem ipsum.
 
 ==== Test
+
+Lorem test.
+
+Lorem test.

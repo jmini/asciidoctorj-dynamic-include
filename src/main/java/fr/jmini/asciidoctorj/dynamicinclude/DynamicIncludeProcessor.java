@@ -114,7 +114,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             String header = item.getContent()
                     .substring(0, item.getTitleStart());
 
-            String prefix = item.getTitleType() == TitleType.PRESENT ? "" : "[#" + item.getTitleId() + "]\n";
+            String prefix = item.getTitleType() == TitleType.PRESENT ? "\n" : "[#" + item.getTitleId() + "]\n";
 
             String content = prefix + item.getContent()
                     .substring(item.getTitleStart());
@@ -351,7 +351,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
     private static Optional<FileHolder> findByFile(List<FileHolder> list, Path file) {
         Optional<FileHolder> find = list.stream()
-                .filter(i -> Objects.equals(i.getPath(), file))
+                .filter(i -> Objects.equals(file.normalize(), i.getPath()))
                 .findAny();
         return find;
     }

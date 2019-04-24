@@ -10,14 +10,7 @@ Lorem dolor.
 8. one
 7. two
 
-X <<{root}pages/content1.adoc#, link 1>>
-
-X <<{root}pages/content1.adoc#>>
-
-<<{root}pages/content1.adoc#content-1, link 1 content>>
-
-Lorem dolor.
-
-=== pages/content1.adoc
-
-Lorem dolor.
+* Double square brackets: <<content1.adoc#, Content 1>>
+* Double square brackets: <<content1.adoc#test, Content 1 Test>>
+* Double square brackets [root]: <<{root}pages/content1.adoc#, Content 1>>
+* Double square brackets [root]: <<{root}pages/content1.adoc#test, Content 1 Test>>

@@ -91,6 +91,9 @@ public class DynamicIncludeProcessorTest {
         String rootLink = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<{root}folder/other.adoc#test, root>> link", list, dir, page1, dir);
         assertThat(rootLink).isEqualTo("Some <<#test, root>> link");
 
+        String root2Link = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<{root}folder/other.adoc#test, root>> link", list, dir, page1, dir.resolve("folder/.."));
+        assertThat(root2Link).isEqualTo("Some <<#test, root>> link");
+        //
         String rootLinkNoAnchor = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<{root}folder/other.adoc#, root>> link", list, dir, page1, dir);
         assertThat(rootLinkNoAnchor).isEqualTo("Some <<#_other_page, root>> link");
     }
