@@ -113,6 +113,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
             String header = item.getContent()
                     .substring(0, item.getTitleStart());
+            int lineNumber = countLines(header) - 1;
 
             String prefix = item.getTitleType() == TitleType.PRESENT ? "\n" : "[#" + item.getTitleId() + "]\n";
 
@@ -121,7 +122,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             content = replaceXrefDoubleAngledBracketLinks(content, list, dir, path, root);
             content = replaceXrefInlineLinks(content, list, dir, path, root);
 
-            reader.push_include(content, file.getName(), path.toString(), 1, attributes);
+            reader.push_include(content, file.getName(), path.toString(), lineNumber, attributes);
         }
     }
 
@@ -354,6 +355,16 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 .filter(i -> Objects.equals(file.normalize(), i.getPath()))
                 .findAny();
         return find;
+    }
+
+    public static int countLines(String string) {
+        Matcher m = Pattern.compile("\r\n|\r|\n")
+                .matcher(string);
+        int counter = 1;
+        while (m.find()) {
+            counter++;
+        }
+        return counter;
     }
 
     static String readFile(Path file) {

@@ -176,4 +176,10 @@ public class DynamicIncludeProcessorTest {
         assertThat(DynamicIncludeProcessor.computeTitleId("pages/content1.adoc", "", "-")).isEqualTo("pagescontent1-adoc");
         assertThat(DynamicIncludeProcessor.computeTitleId("pages/content1.adoc", "_", "_")).isEqualTo("_pagescontent1_adoc");
     }
+
+    @Test
+    void testCountLines() throws Exception {
+        assertThat(DynamicIncludeProcessor.countLines("one\ntwo")).isEqualTo(2);
+        assertThat(DynamicIncludeProcessor.countLines("one")).isEqualTo(1);
+    }
 }
