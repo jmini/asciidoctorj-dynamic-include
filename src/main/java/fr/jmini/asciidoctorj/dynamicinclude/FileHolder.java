@@ -9,16 +9,18 @@ public class FileHolder {
     private String content;
     private TitleType titleType;
     private String title;
+    private int titleLevel;
     private String titleId;
     private int titleStart;
     private int titleEnd;
 
-    public FileHolder(Path path, String key, String content, TitleType titleType, String title, String titleId, int titleStart, int titleEnd) {
+    public FileHolder(Path path, String key, String content, TitleType titleType, String title, int titleLevel, String titleId, int titleStart, int titleEnd) {
         this.path = path;
         this.key = key;
         this.content = content;
         this.titleType = titleType;
         this.title = title;
+        this.titleLevel = titleLevel;
         this.titleId = titleId;
         this.titleStart = titleStart;
         this.titleEnd = titleEnd;
@@ -42,6 +44,10 @@ public class FileHolder {
 
     public String getTitle() {
         return title;
+    }
+
+    public int getTitleLevel() {
+        return titleLevel;
     }
 
     public String getTitleId() {

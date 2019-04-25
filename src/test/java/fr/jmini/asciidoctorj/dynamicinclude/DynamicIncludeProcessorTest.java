@@ -63,8 +63,8 @@ public class DynamicIncludeProcessorTest {
         Path dir = Paths.get("dir");
         Path page1 = dir.resolve("folder/page.adoc");
         Path page2 = dir.resolve("folder/other.adoc");
-        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", "!! dummy content !!", TitleType.PRESENT, "Page 1", "_page_1", 91, 95);
-        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", "!! dummy content !!", TitleType.PRESENT, "Other Page", "_other_page", 101, 105);
+        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
+        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
         List<FileHolder> list = Arrays.asList(holder1, holder2);
 
         String emptyList = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some content", Collections.emptyList(), dir, page1, dir);
@@ -103,8 +103,8 @@ public class DynamicIncludeProcessorTest {
         Path dir = Paths.get("dir");
         Path page1 = dir.resolve("folder/page.adoc");
         Path page2 = dir.resolve("folder/other.adoc");
-        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", "!! dummy content !!", TitleType.PRESENT, "Page 1", "_page_1", 91, 95);
-        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", "!! dummy content !!", TitleType.PRESENT, "Other Page", "_other_page", 101, 105);
+        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
+        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
         List<FileHolder> list = Arrays.asList(holder1, holder2);
 
         String emptyList = DynamicIncludeProcessor.replaceXrefInlineLinks("Some content", Collections.emptyList(), dir, page1, dir);

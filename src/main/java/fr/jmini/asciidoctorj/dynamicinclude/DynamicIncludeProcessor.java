@@ -33,7 +33,7 @@ import fr.jmini.utils.substringfinder.SubstringFinder;
 public class DynamicIncludeProcessor extends IncludeProcessor {
     private static final String PREFIX = "dynamic:";
 
-    private static final Pattern TITLE_REGEX = Pattern.compile("(\\/?\\/? *)={1,5}(.+)");
+    private static final Pattern TITLE_REGEX = Pattern.compile("(\\/?\\/? *)(={1,5})(.+)");
 
     private static final SubstringFinder DOUBLE_ANGLED_BRACKET_FINDER = SubstringFinder.define("<<", ">>");
     private static final SubstringFinder SINGLE_BRACKET_FINDER = SubstringFinder.define("[", "]");
@@ -111,14 +111,33 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             Path path = item.getPath();
             File file = path.toFile();
 
-            String header = item.getContent()
-                    .substring(0, item.getTitleStart());
-            int lineNumber = countLines(header) - 1;
+            boolean previousTitleEquals = false;
+            if (i > 0) {
+                FileHolder previousItem = list.get(i - 1);
+                previousTitleEquals = (item.getTitleType() == TitleType.PRESENT)
+                        && Objects.equals(previousItem.getTitleType(), item.getTitleType())
+                        && Objects.equals(previousItem.getTitleLevel(), item.getTitleLevel())
+                        && Objects.equals(previousItem.getTitle(), item.getTitle());
+            }
 
-            String prefix = item.getTitleType() == TitleType.PRESENT ? "\n" : "[#" + item.getTitleId() + "]\n";
+            int splitIndex = (previousTitleEquals) ? item.getTitleEnd() : item.getTitleStart();
+            String header = item.getContent()
+                    .substring(0, splitIndex);
+            int lineNumber = countLines(header);
+
+            String prefix;
+            if (previousTitleEquals) {
+                prefix = "";
+            } else if (item.getTitleType() == TitleType.PRESENT) {
+                prefix = "\n";
+                lineNumber = lineNumber - 1;
+            } else {
+                prefix = "[#" + item.getTitleId() + "]\n";
+                lineNumber = lineNumber - 1;
+            }
 
             String content = prefix + item.getContent()
-                    .substring(item.getTitleStart());
+                    .substring(splitIndex);
             content = replaceXrefDoubleAngledBracketLinks(content, list, dir, path, root);
             content = replaceXrefInlineLinks(content, list, dir, path, root);
 
@@ -173,29 +192,33 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 .toString();
         String content = readFile(p);
 
+        TitleType titleType;
+        int titleLevel;
         String title;
         String titleId;
         int titleStart;
         int titleEnd;
-        TitleType titleType;
         Matcher titleMatcher = TITLE_REGEX.matcher(content);
         if (titleMatcher.find()) {
             titleType = titleMatcher.group(1)
                     .isEmpty() ? TitleType.PRESENT : TitleType.COMMENTED;
-            title = titleMatcher.group(2)
+            titleLevel = titleMatcher.group(2)
+                    .length();
+            title = titleMatcher.group(3)
                     .trim();
             titleId = computeTitleId(title, idprefix, idseparator);
             titleStart = titleMatcher.start();
             titleEnd = titleMatcher.end();
         } else {
             titleType = TitleType.ABSENT;
+            titleLevel = 0;
             title = null;
             titleId = computeTitleId(key, idprefix, idseparator);
             titleStart = 0;
             titleEnd = 0;
         }
 
-        return new FileHolder(p, key, content, titleType, title, titleId, titleStart, titleEnd);
+        return new FileHolder(p, key, content, titleType, title, titleLevel, titleId, titleStart, titleEnd);
     }
 
     public static String computeTitleId(String text, String idprefix, String idseparator) {

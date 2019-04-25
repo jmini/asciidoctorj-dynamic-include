@@ -43,7 +43,23 @@ public class ExampleTest {
         assertThat(record.getMessage()).isEqualTo("list item index: expected 1, got 9");
         assertThat(record.getCursor()
                 .getLineNumber()).isEqualTo(10);
+    }
 
+    @Test
+    public void testExample3() throws Exception {
+        List<LogRecord> logs = runTest("example3", "index");
+
+        assertThat(logs).hasSize(2);
+
+        LogRecord record1 = logs.get(0);
+        assertThat(record1.getMessage()).isEqualTo("list item index: expected 1, got 7");
+        assertThat(record1.getCursor()
+                .getLineNumber()).isEqualTo(10);
+
+        LogRecord record2 = logs.get(1);
+        assertThat(record2.getMessage()).isEqualTo("list item index: expected 1, got 8");
+        assertThat(record2.getCursor()
+                .getLineNumber()).isEqualTo(10);
     }
 
     private List<LogRecord> runTest(String folder, String fileName) throws IOException, URISyntaxException {

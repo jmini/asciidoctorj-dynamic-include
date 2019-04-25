@@ -1,0 +1,9 @@
+
+// {root} points to the example root folder:
+ifndef::root[]
+:root:
+endif::[]
+
+== Example 3
+
+include::dynamic:**/*.adoc[order="pages.txt"]
