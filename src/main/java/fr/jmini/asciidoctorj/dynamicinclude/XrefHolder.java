@@ -4,16 +4,16 @@ public class XrefHolder {
     private String file;
     private String anchor;
     private String text;
-    private boolean doubleAngledBracketForm;
+    private XrefHolderType type;
     private int startIndex;
     private int endIndex;
 
-    public XrefHolder(String file, String anchor, String text, boolean doubleAngledBracketForm, int startIndex, int endIndex) {
+    public XrefHolder(String file, String anchor, String text, XrefHolderType type, int startIndex, int endIndex) {
         super();
         this.file = file;
         this.anchor = anchor;
         this.text = text;
-        this.doubleAngledBracketForm = doubleAngledBracketForm;
+        this.type = type;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
     }
@@ -30,8 +30,8 @@ public class XrefHolder {
         return text;
     }
 
-    public boolean isDoubleAngledBracketForm() {
-        return doubleAngledBracketForm;
+    public XrefHolderType getType() {
+        return type;
     }
 
     public int getStartIndex() {
@@ -40,5 +40,9 @@ public class XrefHolder {
 
     public int getEndIndex() {
         return endIndex;
+    }
+
+    public static enum XrefHolderType {
+        DOUBLE_ANGLED_BRACKET, INLINE, TEXT
     }
 }

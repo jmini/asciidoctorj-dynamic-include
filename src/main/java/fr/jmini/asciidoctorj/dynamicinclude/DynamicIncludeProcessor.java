@@ -28,6 +28,7 @@ import org.asciidoctor.ast.Document;
 import org.asciidoctor.extension.IncludeProcessor;
 import org.asciidoctor.extension.PreprocessorReader;
 
+import fr.jmini.asciidoctorj.dynamicinclude.XrefHolder.XrefHolderType;
 import fr.jmini.utils.substringfinder.Range;
 import fr.jmini.utils.substringfinder.SubstringFinder;
 
@@ -244,71 +245,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
     }
 
     public static String replaceXrefInlineLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot) {
-        if (list.isEmpty()) {
-            return content;
-        }
-        StringBuilder sb = new StringBuilder();
-
-        int startAt = 0;
-        int findXref = content.indexOf("xref:", startAt);
-        while (findXref > -1) {
-
-            Optional<Range> find = SINGLE_BRACKET_FINDER.nextRange(content, findXref);
-            if (find.isPresent()) {
-                Range range = find.get();
-                String target = content.substring(findXref + 5, range.getRangeStart());
-                if (target.matches("\\S+")) {
-
-                    sb.append(content.substring(startAt, findXref));
-                    sb.append("xref:");
-
-                    int hashPosition = target.indexOf("#");
-                    String fileName = hashPosition > -1 ? target.substring(0, hashPosition) : target;
-
-                    Path file;
-                    if (fileName.startsWith("{root}")) {
-                        file = currentRoot.resolve(fileName.substring(6));
-                    } else {
-                        file = currentPath.getParent()
-                                .resolve(fileName);
-                    }
-                    Optional<FileHolder> findFile = findByFile(list, file);
-                    if (!findFile.isPresent()) {
-                        sb.append(dir.relativize(file)
-                                .toString());
-                    }
-                    if (hashPosition > -1) {
-                        String anchor = target.substring(hashPosition + 1);
-                        if (anchor.trim()
-                                .isEmpty() && findFile.isPresent()) {
-                            sb.append("#");
-                            sb.append(findFile.get()
-                                    .getTitleId());
-                        } else {
-                            sb.append("#");
-                            sb.append(anchor);
-                        }
-                    } else if (findFile.isPresent()) {
-                        sb.append("#");
-                        sb.append(findFile.get()
-                                .getTitleId());
-                    }
-
-                    sb.append(content.substring(range.getRangeStart(), range.getRangeEnd()));
-                    startAt = range.getRangeEnd();
-                } else {
-                    startAt = findXref;
-                }
-            } else {
-                startAt = findXref;
-            }
-
-            findXref = content.indexOf("xref:", startAt);
-        }
-        if (startAt < content.length()) {
-            sb.append(content.substring(startAt));
-        }
-        return sb.toString();
+        return replaceXref(content, list, dir, currentPath, currentRoot, DynamicIncludeProcessor::findNextXrefInline);
     }
 
     private static String replaceXref(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot, BiFunction<String, Integer, Optional<XrefHolder>> findFunction) {
@@ -365,7 +302,38 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 text = null;
             }
 
-            return Optional.of(new XrefHolder(fileName, anchor, text, true, range.getRangeStart(), range.getRangeEnd()));
+            return Optional.of(new XrefHolder(fileName, anchor, text, XrefHolderType.DOUBLE_ANGLED_BRACKET, range.getRangeStart(), range.getRangeEnd()));
+        }
+        return Optional.empty();
+    }
+
+    public static Optional<XrefHolder> findNextXrefInline(String content, int startAt) {
+        int findXref = content.indexOf("xref:", startAt);
+        if (findXref > -1) {
+            Optional<Range> find = SINGLE_BRACKET_FINDER.nextRange(content, findXref);
+            if (find.isPresent()) {
+                Range range = find.get();
+                String target = content.substring(findXref + 5, range.getRangeStart());
+                if (target.matches("\\S+")) {
+                    String fileName;
+                    String anchor;
+                    int hashPosition = target.indexOf("#");
+                    if (hashPosition > -1) {
+                        fileName = target.substring(0, hashPosition);
+                        anchor = target.substring(hashPosition + 1);
+                    } else {
+                        fileName = null;
+                        anchor = target;
+                    }
+                    String text;
+                    if (range.getContentStart() != range.getContentEnd()) {
+                        text = content.substring(range.getContentStart(), range.getContentEnd());
+                    } else {
+                        text = null;
+                    }
+                    return Optional.of(new XrefHolder(fileName, anchor, text, XrefHolderType.INLINE, findXref, range.getRangeEnd()));
+                }
+            }
         }
         return Optional.empty();
     }
@@ -389,7 +357,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             } else {
                 newFileName = "";
             }
-            if (holder.getAnchor()
+            if (findFile.isPresent() && holder.getAnchor()
                     .trim()
                     .isEmpty()) {
                 newAnchor = findFile.get()
@@ -401,12 +369,13 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         if (newAnchor == null) {
             newAnchor = holder.getAnchor();
         }
-        return new XrefHolder(newFileName, newAnchor, holder.getText(), holder.isDoubleAngledBracketForm(), -1, -1);
+        return new XrefHolder(newFileName, newAnchor, holder.getText(), holder.getType(), -1, -1);
     }
 
     public static String holderToAsciiDoc(XrefHolder holder) {
         StringBuilder sb = new StringBuilder();
-        if (holder.isDoubleAngledBracketForm()) {
+        switch (holder.getType()) {
+        case DOUBLE_ANGLED_BRACKET: {
             sb.append("<<");
             if (holder.getFile() != null) {
                 sb.append(holder.getFile());
@@ -420,6 +389,28 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 sb.append(holder.getText());
             }
             sb.append(">>");
+            break;
+        }
+        case INLINE: {
+            sb.append("xref:");
+            if (holder.getFile() != null) {
+                sb.append(holder.getFile());
+                sb.append("#");
+            }
+            if (holder.getAnchor() != null) {
+                sb.append(holder.getAnchor());
+            }
+            sb.append("[");
+            if (holder.getText() != null) {
+                sb.append(holder.getText());
+            }
+            sb.append("]");
+            break;
+        }
+        case TEXT:
+            break;
+        default:
+            break;
         }
         return sb.toString();
     }

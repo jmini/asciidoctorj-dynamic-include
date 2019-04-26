@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
+import fr.jmini.asciidoctorj.dynamicinclude.XrefHolder.XrefHolderType;
+
 public class DynamicIncludeProcessorTest {
 
     @Test
@@ -126,8 +128,8 @@ public class DynamicIncludeProcessorTest {
         String internalLink = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some xref:#test[internal] link", list, dir, page1, dir);
         assertThat(internalLink).isEqualTo("Some xref:#test[internal] link");
 
-        String externalLink = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:ext.adoc[other] link", list, dir, page1, dir);
-        assertThat(externalLink).isEqualTo("Some xref:folder/ext.adoc[other] link");
+        String externalLink = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:ext.adoc#[other] link", list, dir, page1, dir);
+        assertThat(externalLink).isEqualTo("Some xref:folder/ext.adoc#[other] link");
 
         String externalWithAnchorLink = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:ext.adoc#test[other] link", list, dir, page1, dir);
         assertThat(externalWithAnchorLink).isEqualTo("Some xref:folder/ext.adoc#test[other] link");
@@ -135,7 +137,7 @@ public class DynamicIncludeProcessorTest {
         String rootLink = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:{root}folder/other.adoc#test[root] link", list, dir, page1, dir);
         assertThat(rootLink).isEqualTo("Some xref:#test[root] link");
 
-        String rootLinkNoAnchor = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:{root}folder/other.adoc[root] link", list, dir, page1, dir);
+        String rootLinkNoAnchor = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:{root}folder/other.adoc#[root] link", list, dir, page1, dir);
         assertThat(rootLinkNoAnchor).isEqualTo("Some xref:#_other_page[root] link");
 
         String rootLinkEmptyAnchor = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:{root}folder/other.adoc#[root] link", list, dir, page1, dir);
@@ -150,7 +152,7 @@ public class DynamicIncludeProcessorTest {
         Optional<XrefHolder> linkStartOpt = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("<<other.adoc#test, other>> some link", 0);
         assertThat(linkStartOpt).isPresent();
         XrefHolder linkStart = linkStartOpt.get();
-        assertThat(linkStart.isDoubleAngledBracketForm()).isTrue();
+        assertThat(linkStart.getType()).isEqualTo(XrefHolderType.DOUBLE_ANGLED_BRACKET);
         assertThat(linkStart.getStartIndex()).isEqualTo(0);
         assertThat(linkStart.getEndIndex()).isEqualTo(26);
         assertThat(linkStart.getFile()).isEqualTo("other.adoc");
@@ -160,7 +162,7 @@ public class DynamicIncludeProcessorTest {
         Optional<XrefHolder> linkOpt = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("Some <<page1.adoc#sect, Other>> link", 0);
         assertThat(linkOpt).isPresent();
         XrefHolder link = linkOpt.get();
-        assertThat(link.isDoubleAngledBracketForm()).isTrue();
+        assertThat(link.getType()).isEqualTo(XrefHolderType.DOUBLE_ANGLED_BRACKET);
         assertThat(link.getStartIndex()).isEqualTo(5);
         assertThat(link.getEndIndex()).isEqualTo(31);
         assertThat(link.getFile()).isEqualTo("page1.adoc");
@@ -170,7 +172,7 @@ public class DynamicIncludeProcessorTest {
         Optional<XrefHolder> linkEndOpt = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("Some link <<page2.adoc#here, OTHER>>", 0);
         assertThat(linkEndOpt).isPresent();
         XrefHolder linkEnd = linkEndOpt.get();
-        assertThat(linkEnd.isDoubleAngledBracketForm()).isTrue();
+        assertThat(linkEnd.getType()).isEqualTo(XrefHolderType.DOUBLE_ANGLED_BRACKET);
         assertThat(linkEnd.getStartIndex()).isEqualTo(10);
         assertThat(linkEnd.getEndIndex()).isEqualTo(36);
         assertThat(linkEnd.getFile()).isEqualTo("page2.adoc");
@@ -180,7 +182,7 @@ public class DynamicIncludeProcessorTest {
         Optional<XrefHolder> internalLinkOpt = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("Some <<test, internal>> link", 0);
         assertThat(internalLinkOpt).isPresent();
         XrefHolder internalLink = internalLinkOpt.get();
-        assertThat(internalLink.isDoubleAngledBracketForm()).isTrue();
+        assertThat(internalLink.getType()).isEqualTo(XrefHolderType.DOUBLE_ANGLED_BRACKET);
         assertThat(internalLink.getStartIndex()).isEqualTo(5);
         assertThat(internalLink.getEndIndex()).isEqualTo(23);
         assertThat(internalLink.getFile()).isNull();
@@ -190,7 +192,7 @@ public class DynamicIncludeProcessorTest {
         Optional<XrefHolder> internalNoTextOpt = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("Some <<test>> link", 0);
         assertThat(internalNoTextOpt).isPresent();
         XrefHolder internalNoText = internalNoTextOpt.get();
-        assertThat(internalNoText.isDoubleAngledBracketForm()).isTrue();
+        assertThat(internalNoText.getType()).isEqualTo(XrefHolderType.DOUBLE_ANGLED_BRACKET);
         assertThat(internalNoText.getStartIndex()).isEqualTo(5);
         assertThat(internalNoText.getEndIndex()).isEqualTo(13);
         assertThat(internalNoText.getFile()).isNull();
@@ -200,7 +202,7 @@ public class DynamicIncludeProcessorTest {
         Optional<XrefHolder> noTextOpt = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("Some <<other.adoc#test>> link", 0);
         assertThat(noTextOpt).isPresent();
         XrefHolder noText = noTextOpt.get();
-        assertThat(noText.isDoubleAngledBracketForm()).isTrue();
+        assertThat(noText.getType()).isEqualTo(XrefHolderType.DOUBLE_ANGLED_BRACKET);
         assertThat(noText.getStartIndex()).isEqualTo(5);
         assertThat(noText.getEndIndex()).isEqualTo(24);
         assertThat(noText.getFile()).isEqualTo("other.adoc");
@@ -209,34 +211,158 @@ public class DynamicIncludeProcessorTest {
     }
 
     @Test
+    void testFindNextXrefInline() throws Exception {
+        Optional<XrefHolder> emptyList = DynamicIncludeProcessor.findNextXrefInline("Some content", 0);
+        assertThat(emptyList).isNotPresent();
+
+        Optional<XrefHolder> linkStartOpt = DynamicIncludeProcessor.findNextXrefInline("xref:other.adoc#test[other] some link", 0);
+        assertThat(linkStartOpt).isPresent();
+        XrefHolder linkStart = linkStartOpt.get();
+        assertThat(linkStart.getType()).isEqualTo(XrefHolderType.INLINE);
+        assertThat(linkStart.getStartIndex()).isEqualTo(0);
+        assertThat(linkStart.getEndIndex()).isEqualTo(27);
+        assertThat(linkStart.getFile()).isEqualTo("other.adoc");
+        assertThat(linkStart.getAnchor()).isEqualTo("test");
+        assertThat(linkStart.getText()).isEqualTo("other");
+
+        Optional<XrefHolder> linkOpt = DynamicIncludeProcessor.findNextXrefInline("Some xref:page1.adoc#sect[Other] link", 0);
+        assertThat(linkOpt).isPresent();
+        XrefHolder link = linkOpt.get();
+        assertThat(link.getType()).isEqualTo(XrefHolderType.INLINE);
+        assertThat(link.getStartIndex()).isEqualTo(5);
+        assertThat(link.getEndIndex()).isEqualTo(32);
+        assertThat(link.getFile()).isEqualTo("page1.adoc");
+        assertThat(link.getAnchor()).isEqualTo("sect");
+        assertThat(link.getText()).isEqualTo("Other");
+
+        Optional<XrefHolder> linkEndOpt = DynamicIncludeProcessor.findNextXrefInline("Some link xref:page2.adoc#here[OTHER]", 0);
+        assertThat(linkEndOpt).isPresent();
+        XrefHolder linkEnd = linkEndOpt.get();
+        assertThat(linkEnd.getType()).isEqualTo(XrefHolderType.INLINE);
+        assertThat(linkEnd.getStartIndex()).isEqualTo(10);
+        assertThat(linkEnd.getEndIndex()).isEqualTo(37);
+        assertThat(linkEnd.getFile()).isEqualTo("page2.adoc");
+        assertThat(linkEnd.getAnchor()).isEqualTo("here");
+        assertThat(linkEnd.getText()).isEqualTo("OTHER");
+
+        Optional<XrefHolder> internalLinkOpt = DynamicIncludeProcessor.findNextXrefInline("Some xref:test[internal] link", 0);
+        assertThat(internalLinkOpt).isPresent();
+        XrefHolder internalLink = internalLinkOpt.get();
+        assertThat(internalLink.getType()).isEqualTo(XrefHolderType.INLINE);
+        assertThat(internalLink.getStartIndex()).isEqualTo(5);
+        assertThat(internalLink.getEndIndex()).isEqualTo(24);
+        assertThat(internalLink.getFile()).isNull();
+        assertThat(internalLink.getAnchor()).isEqualTo("test");
+        assertThat(internalLink.getText()).isEqualTo("internal");
+
+        Optional<XrefHolder> internalNoTextOpt = DynamicIncludeProcessor.findNextXrefInline("Some xref:test[] link", 0);
+        assertThat(internalNoTextOpt).isPresent();
+        XrefHolder internalNoText = internalNoTextOpt.get();
+        assertThat(internalNoText.getType()).isEqualTo(XrefHolderType.INLINE);
+        assertThat(internalNoText.getStartIndex()).isEqualTo(5);
+        assertThat(internalNoText.getEndIndex()).isEqualTo(16);
+        assertThat(internalNoText.getFile()).isNull();
+        assertThat(internalNoText.getAnchor()).isEqualTo("test");
+        assertThat(internalNoText.getText()).isNull();
+
+        Optional<XrefHolder> noTextOpt = DynamicIncludeProcessor.findNextXrefInline("Some xref:other.adoc#test[] link", 0);
+        assertThat(noTextOpt).isPresent();
+        XrefHolder noText = noTextOpt.get();
+        assertThat(noText.getType()).isEqualTo(XrefHolderType.INLINE);
+        assertThat(noText.getStartIndex()).isEqualTo(5);
+        assertThat(noText.getEndIndex()).isEqualTo(27);
+        assertThat(noText.getFile()).isEqualTo("other.adoc");
+        assertThat(noText.getAnchor()).isEqualTo("test");
+        assertThat(noText.getText()).isNull();
+    }
+
+    @Test
     void testHolderToAsciiDoc() throws Exception {
-        String input1 = "<<other.adoc#test, other>>";
-        Optional<XrefHolder> findHolder1 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input1, 0);
-        assertThat(findHolder1).isPresent();
-        XrefHolder holder1 = findHolder1.get();
-        String string1 = DynamicIncludeProcessor.holderToAsciiDoc(holder1);
-        assertThat(string1).isEqualTo(input1);
+        // DoubleAngledBracket:
+        String input10 = "<<other.adoc#test, other>>";
+        Optional<XrefHolder> findHolder10 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input10, 0);
+        assertThat(findHolder10).isPresent();
+        XrefHolder holder10 = findHolder10.get();
+        String string10 = DynamicIncludeProcessor.holderToAsciiDoc(holder10);
+        assertThat(string10).isEqualTo(input10);
 
-        String input2 = "<<test,internal>>";
-        Optional<XrefHolder> findHolder2 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input2, 0);
-        assertThat(findHolder2).isPresent();
-        XrefHolder holder2 = findHolder2.get();
-        String string2 = DynamicIncludeProcessor.holderToAsciiDoc(holder2);
-        assertThat(string2).isEqualTo(input2);
+        String input11 = "<<test,internal>>";
+        Optional<XrefHolder> findHolder11 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input11, 0);
+        assertThat(findHolder11).isPresent();
+        XrefHolder holder11 = findHolder11.get();
+        String string11 = DynamicIncludeProcessor.holderToAsciiDoc(holder11);
+        assertThat(string11).isEqualTo(input11);
 
-        String input3 = "<<here>>";
-        Optional<XrefHolder> findHolder3 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input3, 0);
-        assertThat(findHolder3).isPresent();
-        XrefHolder holder3 = findHolder3.get();
-        String string3 = DynamicIncludeProcessor.holderToAsciiDoc(holder3);
-        assertThat(string3).isEqualTo(input3);
+        String input12 = "<<here>>";
+        Optional<XrefHolder> findHolder12 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input12, 0);
+        assertThat(findHolder12).isPresent();
+        XrefHolder holder12 = findHolder12.get();
+        String string12 = DynamicIncludeProcessor.holderToAsciiDoc(holder12);
+        assertThat(string12).isEqualTo(input12);
 
-        String input4 = "<<other.adoc#test>>";
-        Optional<XrefHolder> findHolder4 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input4, 0);
-        assertThat(findHolder4).isPresent();
-        XrefHolder holder4 = findHolder4.get();
-        String string4 = DynamicIncludeProcessor.holderToAsciiDoc(holder4);
-        assertThat(string4).isEqualTo(input4);
+        String input13 = "<<other.adoc#test>>";
+        Optional<XrefHolder> findHolder13 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input13, 0);
+        assertThat(findHolder13).isPresent();
+        XrefHolder holder13 = findHolder13.get();
+        String string13 = DynamicIncludeProcessor.holderToAsciiDoc(holder13);
+        assertThat(string13).isEqualTo(input13);
+
+        String input14 = "<<other.adoc#>>";
+        Optional<XrefHolder> findHolder14 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input14, 0);
+        assertThat(findHolder14).isPresent();
+        XrefHolder holder14 = findHolder14.get();
+        String string14 = DynamicIncludeProcessor.holderToAsciiDoc(holder14);
+        assertThat(string14).isEqualTo(input14);
+
+        String input15 = "<<other.adoc#, here>>";
+        Optional<XrefHolder> findHolder15 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input15, 0);
+        assertThat(findHolder15).isPresent();
+        XrefHolder holder15 = findHolder15.get();
+        String string15 = DynamicIncludeProcessor.holderToAsciiDoc(holder15);
+        assertThat(string15).isEqualTo(input15);
+
+        // Inline:
+        String input20 = "xref:other.adoc#test[other]";
+        Optional<XrefHolder> findHolder20 = DynamicIncludeProcessor.findNextXrefInline(input20, 0);
+        assertThat(findHolder20).isPresent();
+        XrefHolder holder20 = findHolder20.get();
+        String string20 = DynamicIncludeProcessor.holderToAsciiDoc(holder20);
+        assertThat(string20).isEqualTo(input20);
+
+        String input21 = "xref:test[internal]";
+        Optional<XrefHolder> findHolder21 = DynamicIncludeProcessor.findNextXrefInline(input21, 0);
+        assertThat(findHolder21).isPresent();
+        XrefHolder holder21 = findHolder21.get();
+        String string21 = DynamicIncludeProcessor.holderToAsciiDoc(holder21);
+        assertThat(string21).isEqualTo(input21);
+
+        String input22 = "xref:here[]";
+        Optional<XrefHolder> findHolder22 = DynamicIncludeProcessor.findNextXrefInline(input22, 0);
+        assertThat(findHolder22).isPresent();
+        XrefHolder holder22 = findHolder22.get();
+        String string22 = DynamicIncludeProcessor.holderToAsciiDoc(holder22);
+        assertThat(string22).isEqualTo(input22);
+
+        String input23 = "xref:other.adoc#test[]";
+        Optional<XrefHolder> findHolder23 = DynamicIncludeProcessor.findNextXrefInline(input23, 0);
+        assertThat(findHolder23).isPresent();
+        XrefHolder holder23 = findHolder23.get();
+        String string23 = DynamicIncludeProcessor.holderToAsciiDoc(holder23);
+        assertThat(string23).isEqualTo(input23);
+
+        String input24 = "xref:other.adoc#[]";
+        Optional<XrefHolder> findHolder24 = DynamicIncludeProcessor.findNextXrefInline(input24, 0);
+        assertThat(findHolder24).isPresent();
+        XrefHolder holder24 = findHolder24.get();
+        String string24 = DynamicIncludeProcessor.holderToAsciiDoc(holder24);
+        assertThat(string24).isEqualTo(input24);
+
+        String input25 = "xref:other.adoc#[here]";
+        Optional<XrefHolder> findHolder25 = DynamicIncludeProcessor.findNextXrefInline(input25, 0);
+        assertThat(findHolder25).isPresent();
+        XrefHolder holder25 = findHolder25.get();
+        String string25 = DynamicIncludeProcessor.holderToAsciiDoc(holder25);
+        assertThat(string25).isEqualTo(input25);
     }
 
     @Test
