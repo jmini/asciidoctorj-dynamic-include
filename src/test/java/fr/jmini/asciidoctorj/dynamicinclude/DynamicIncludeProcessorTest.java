@@ -209,6 +209,37 @@ public class DynamicIncludeProcessorTest {
     }
 
     @Test
+    void testHolderToAsciiDoc() throws Exception {
+        String input1 = "<<other.adoc#test, other>>";
+        Optional<XrefHolder> findHolder1 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input1, 0);
+        assertThat(findHolder1).isPresent();
+        XrefHolder holder1 = findHolder1.get();
+        String string1 = DynamicIncludeProcessor.holderToAsciiDoc(holder1);
+        assertThat(string1).isEqualTo(input1);
+
+        String input2 = "<<test,internal>>";
+        Optional<XrefHolder> findHolder2 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input2, 0);
+        assertThat(findHolder2).isPresent();
+        XrefHolder holder2 = findHolder2.get();
+        String string2 = DynamicIncludeProcessor.holderToAsciiDoc(holder2);
+        assertThat(string2).isEqualTo(input2);
+
+        String input3 = "<<here>>";
+        Optional<XrefHolder> findHolder3 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input3, 0);
+        assertThat(findHolder3).isPresent();
+        XrefHolder holder3 = findHolder3.get();
+        String string3 = DynamicIncludeProcessor.holderToAsciiDoc(holder3);
+        assertThat(string3).isEqualTo(input3);
+
+        String input4 = "<<other.adoc#test>>";
+        Optional<XrefHolder> findHolder4 = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket(input4, 0);
+        assertThat(findHolder4).isPresent();
+        XrefHolder holder4 = findHolder4.get();
+        String string4 = DynamicIncludeProcessor.holderToAsciiDoc(holder4);
+        assertThat(string4).isEqualTo(input4);
+    }
+
+    @Test
     void testCreateFileHolder() throws Exception {
         Path dir = Paths.get("src/test/resources")
                 .toAbsolutePath();

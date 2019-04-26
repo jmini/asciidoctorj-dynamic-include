@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -239,90 +240,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
     }
 
     public static String replaceXrefDoubleAngledBracketLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot) {
-        if (list.isEmpty()) {
-            return content;
-        }
-        StringBuilder sb = new StringBuilder();
-
-        int startAt = 0;
-        Optional<XrefHolder> find = findNextXrefDoubleAngledBracket(content, startAt);
-        while (find.isPresent()) {
-            XrefHolder holder = find.get();
-
-            sb.append(content.substring(startAt, holder.getStartIndex()));
-            sb.append("<<");
-
-            String fileName = holder.getFile();
-            if (fileName != null) {
-                Path file;
-                if (fileName.startsWith("{root}")) {
-                    file = currentRoot.resolve(fileName.substring(6));
-                } else {
-                    file = currentPath.getParent()
-                            .resolve(fileName);
-                }
-                Optional<FileHolder> findFile = findByFile(list, file);
-                if (!findFile.isPresent()) {
-                    sb.append(dir.relativize(file)
-                            .toString());
-                }
-                sb.append("#");
-                if (holder.getAnchor()
-                        .trim()
-                        .isEmpty()) {
-                    sb.append(findFile.get()
-                            .getTitleId());
-                }
-            }
-            sb.append(holder.getAnchor());
-            if (holder.getText() != null) {
-                sb.append(",");
-                sb.append(holder.getText());
-            }
-            sb.append(">>");
-
-            startAt = holder.getEndIndex();
-            find = findNextXrefDoubleAngledBracket(content, startAt);
-        }
-
-        if (startAt < content.length()) {
-            sb.append(content.substring(startAt));
-        }
-        return sb.toString();
-    }
-
-    public static Optional<XrefHolder> findNextXrefDoubleAngledBracket(String content, int startAt) {
-        Optional<Range> find = DOUBLE_ANGLED_BRACKET_FINDER.nextRange(content, startAt);
-        if (find.isPresent()) {
-            Range range = find.get();
-
-            String fileName;
-            String anchor;
-            String text;
-            String rangeContent = content.substring(range.getContentStart(), range.getContentEnd());
-            int hashPosition = rangeContent.indexOf("#");
-
-            int searchStart;
-            if (hashPosition > -1) {
-                fileName = rangeContent.substring(0, hashPosition);
-                searchStart = hashPosition + 1;
-            } else {
-                fileName = null;
-                searchStart = 0;
-            }
-
-            int commaPosition = rangeContent.indexOf(",", searchStart);
-            if (commaPosition > -1) {
-                anchor = rangeContent.substring(searchStart, commaPosition);
-                text = rangeContent.substring(commaPosition + 1);
-            } else {
-                anchor = rangeContent.substring(searchStart);
-                text = null;
-            }
-
-            return Optional.of(new XrefHolder(fileName, anchor, text, true, range.getRangeStart(), range.getRangeEnd()));
-        }
-        return Optional.empty();
+        return replaceXref(content, list, dir, currentPath, currentRoot, DynamicIncludeProcessor::findNextXrefDoubleAngledBracket);
     }
 
     public static String replaceXrefInlineLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot) {
@@ -389,6 +307,119 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         }
         if (startAt < content.length()) {
             sb.append(content.substring(startAt));
+        }
+        return sb.toString();
+    }
+
+    private static String replaceXref(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot, BiFunction<String, Integer, Optional<XrefHolder>> findFunction) {
+        if (list.isEmpty()) {
+            return content;
+        }
+        StringBuilder sb = new StringBuilder();
+
+        int startAt = 0;
+        Optional<XrefHolder> find = findFunction.apply(content, startAt);
+        while (find.isPresent()) {
+            XrefHolder holder = find.get();
+
+            sb.append(content.substring(startAt, holder.getStartIndex()));
+            XrefHolder replacedHolder = replaceHolder(holder, list, dir, currentPath, currentRoot);
+            sb.append(holderToAsciiDoc(replacedHolder));
+
+            startAt = holder.getEndIndex();
+            find = findNextXrefDoubleAngledBracket(content, startAt);
+        }
+
+        if (startAt < content.length()) {
+            sb.append(content.substring(startAt));
+        }
+        return sb.toString();
+    }
+
+    public static Optional<XrefHolder> findNextXrefDoubleAngledBracket(String content, int startAt) {
+        Optional<Range> find = DOUBLE_ANGLED_BRACKET_FINDER.nextRange(content, startAt);
+        if (find.isPresent()) {
+            Range range = find.get();
+
+            String fileName;
+            String anchor;
+            String text;
+            String rangeContent = content.substring(range.getContentStart(), range.getContentEnd());
+            int hashPosition = rangeContent.indexOf("#");
+
+            int searchStart;
+            if (hashPosition > -1) {
+                fileName = rangeContent.substring(0, hashPosition);
+                searchStart = hashPosition + 1;
+            } else {
+                fileName = null;
+                searchStart = 0;
+            }
+
+            int commaPosition = rangeContent.indexOf(",", searchStart);
+            if (commaPosition > -1) {
+                anchor = rangeContent.substring(searchStart, commaPosition);
+                text = rangeContent.substring(commaPosition + 1);
+            } else {
+                anchor = rangeContent.substring(searchStart);
+                text = null;
+            }
+
+            return Optional.of(new XrefHolder(fileName, anchor, text, true, range.getRangeStart(), range.getRangeEnd()));
+        }
+        return Optional.empty();
+    }
+
+    private static XrefHolder replaceHolder(XrefHolder holder, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot) {
+        String newFileName;
+        String newAnchor = null;
+        String fileName = holder.getFile();
+        if (fileName != null) {
+            Path file;
+            if (fileName.startsWith("{root}")) {
+                file = currentRoot.resolve(fileName.substring(6));
+            } else {
+                file = currentPath.getParent()
+                        .resolve(fileName);
+            }
+            Optional<FileHolder> findFile = findByFile(list, file);
+            if (!findFile.isPresent()) {
+                newFileName = dir.relativize(file)
+                        .toString();
+            } else {
+                newFileName = "";
+            }
+            if (holder.getAnchor()
+                    .trim()
+                    .isEmpty()) {
+                newAnchor = findFile.get()
+                        .getTitleId();
+            }
+        } else {
+            newFileName = null;
+        }
+        if (newAnchor == null) {
+            newAnchor = holder.getAnchor();
+        }
+        return new XrefHolder(newFileName, newAnchor, holder.getText(), holder.isDoubleAngledBracketForm(), -1, -1);
+    }
+
+    public static String holderToAsciiDoc(XrefHolder holder) {
+        StringBuilder sb = new StringBuilder();
+        if (holder.isDoubleAngledBracketForm()) {
+            sb.append("<<");
+            if (holder.getFile() != null) {
+                sb.append(holder.getFile());
+                sb.append("#");
+            }
+            if (holder.getAnchor() != null) {
+                sb.append(holder.getAnchor());
+            }
+            if (holder.getText() != null) {
+                sb.append(",");
+                sb.append(holder.getText());
+            }
+            sb.append(">>");
         }
         return sb.toString();
     }
