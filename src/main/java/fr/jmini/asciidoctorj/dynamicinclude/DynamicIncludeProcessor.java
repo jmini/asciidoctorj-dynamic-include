@@ -60,16 +60,9 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
         List<Path> files = findFiles(dir, glob);
 
-        String order;
-        if (attributes.containsKey("order")) {
-            order = attributes.get("order")
-                    .toString();
-        } else if (document.hasAttribute("dynamic-include-order")) {
-            order = document.getAttribute("dynamic-include-order")
-                    .toString();
-        } else {
-            order = null;
-        }
+        String order = readKey(document, attributes, "order", "dynamic-include-order");
+        boolean externalXrefAsText = readKey(document, attributes, "external-xref-as-text", "dynamic-include-external-xref-as-text") != null;
+
         Path root;
         if (document.hasAttribute("root")) {
             root = dir.resolve(document.getAttribute("root")
@@ -140,11 +133,24 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
             String content = prefix + item.getContent()
                     .substring(splitIndex);
-            content = replaceXrefDoubleAngledBracketLinks(content, list, dir, path, root);
-            content = replaceXrefInlineLinks(content, list, dir, path, root);
+            content = replaceXrefDoubleAngledBracketLinks(content, list, dir, path, root, externalXrefAsText);
+            content = replaceXrefInlineLinks(content, list, dir, path, root, externalXrefAsText);
 
             reader.push_include(content, file.getName(), path.toString(), lineNumber, attributes);
         }
+    }
+
+    private String readKey(Document document, Map<String, Object> attributes, String includeKey, String documentKey) {
+        if (attributes.containsKey(includeKey)) {
+            return attributes.get(includeKey)
+                    .toString();
+        } else {
+            if (document.hasAttribute(documentKey)) {
+                return document.getAttribute(documentKey)
+                        .toString();
+            }
+        }
+        return null;
     }
 
     public static List<Path> findFiles(Path dir, String glob) {
@@ -240,15 +246,15 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return sb.toString();
     }
 
-    public static String replaceXrefDoubleAngledBracketLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot) {
-        return replaceXref(content, list, dir, currentPath, currentRoot, DynamicIncludeProcessor::findNextXrefDoubleAngledBracket);
+    public static String replaceXrefDoubleAngledBracketLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot, boolean externalXrefAsText) {
+        return replaceXref(content, list, dir, currentPath, currentRoot, externalXrefAsText, DynamicIncludeProcessor::findNextXrefDoubleAngledBracket);
     }
 
-    public static String replaceXrefInlineLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot) {
-        return replaceXref(content, list, dir, currentPath, currentRoot, DynamicIncludeProcessor::findNextXrefInline);
+    public static String replaceXrefInlineLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot, boolean externalXrefAsText) {
+        return replaceXref(content, list, dir, currentPath, currentRoot, externalXrefAsText, DynamicIncludeProcessor::findNextXrefInline);
     }
 
-    private static String replaceXref(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot, BiFunction<String, Integer, Optional<XrefHolder>> findFunction) {
+    private static String replaceXref(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot, boolean externalXrefAsText, BiFunction<String, Integer, Optional<XrefHolder>> findFunction) {
         if (list.isEmpty()) {
             return content;
         }
@@ -260,7 +266,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             XrefHolder holder = find.get();
 
             sb.append(content.substring(startAt, holder.getStartIndex()));
-            XrefHolder replacedHolder = replaceHolder(holder, list, dir, currentPath, currentRoot);
+            XrefHolder replacedHolder = replaceHolder(holder, list, dir, currentPath, currentRoot, externalXrefAsText);
             sb.append(holderToAsciiDoc(replacedHolder));
 
             startAt = holder.getEndIndex();
@@ -338,10 +344,11 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return Optional.empty();
     }
 
-    private static XrefHolder replaceHolder(XrefHolder holder, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot) {
+    private static XrefHolder replaceHolder(XrefHolder holder, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot, boolean externalXrefAsText) {
         String newFileName;
         String newAnchor = null;
         String fileName = holder.getFile();
+        XrefHolderType type = holder.getType();
         if (fileName != null) {
             Path file;
             if (fileName.startsWith("{root}")) {
@@ -352,6 +359,9 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             }
             Optional<FileHolder> findFile = findByFile(list, file);
             if (!findFile.isPresent()) {
+                if (externalXrefAsText) {
+                    type = XrefHolderType.TEXT;
+                }
                 newFileName = dir.relativize(file)
                         .toString();
             } else {
@@ -369,7 +379,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         if (newAnchor == null) {
             newAnchor = holder.getAnchor();
         }
-        return new XrefHolder(newFileName, newAnchor, holder.getText(), holder.getType(), -1, -1);
+        return new XrefHolder(newFileName, newAnchor, holder.getText(), type, -1, -1);
     }
 
     public static String holderToAsciiDoc(XrefHolder holder) {
@@ -407,10 +417,14 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             sb.append("]");
             break;
         }
-        case TEXT:
+        case TEXT: {
+            if (holder.getText() != null) {
+                sb.append(holder.getText());
+            }
             break;
+        }
         default:
-            break;
+            throw new IllegalStateException("Unexpected type: " + holder.getType());
         }
         return sb.toString();
     }

@@ -70,34 +70,34 @@ public class DynamicIncludeProcessorTest {
         FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
         List<FileHolder> list = Arrays.asList(holder1, holder2);
 
-        String emptyList = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some content", Collections.emptyList(), dir, page1, dir);
+        String emptyList = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some content", Collections.emptyList(), dir, page1, dir, true);
         assertThat(emptyList).isEqualTo("Some content");
 
-        String oneElement = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some content", Collections.singletonList(holder1), dir, page1, dir);
+        String oneElement = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some content", Collections.singletonList(holder1), dir, page1, dir, true);
         assertThat(oneElement).isEqualTo("Some content");
 
-        String page2LinkStart = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("<<other.adoc#test, other>> some link", list, dir, page1, dir);
+        String page2LinkStart = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("<<other.adoc#test, other>> some link", list, dir, page1, dir, true);
         assertThat(page2LinkStart).isEqualTo("<<#test, other>> some link");
 
-        String page2Link = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<other.adoc#test, other>> link", list, dir, page1, dir);
+        String page2Link = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<other.adoc#test, other>> link", list, dir, page1, dir, true);
         assertThat(page2Link).isEqualTo("Some <<#test, other>> link");
 
-        String page2LinkEnd = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some link <<other.adoc#test, other>>", list, dir, page1, dir);
+        String page2LinkEnd = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some link <<other.adoc#test, other>>", list, dir, page1, dir, true);
         assertThat(page2LinkEnd).isEqualTo("Some link <<#test, other>>");
 
-        String internalLink = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<test, internal>> link", list, dir, page1, dir);
+        String internalLink = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<test, internal>> link", list, dir, page1, dir, true);
         assertThat(internalLink).isEqualTo("Some <<test, internal>> link");
 
-        String externalLink = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<ext.adoc#test, other>> link", list, dir, page1, dir);
+        String externalLink = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<ext.adoc#test, other>> link", list, dir, page1, dir, false);
         assertThat(externalLink).isEqualTo("Some <<folder/ext.adoc#test, other>> link");
 
-        String rootLink = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<{root}folder/other.adoc#test, root>> link", list, dir, page1, dir);
+        String rootLink = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<{root}folder/other.adoc#test, root>> link", list, dir, page1, dir, true);
         assertThat(rootLink).isEqualTo("Some <<#test, root>> link");
 
-        String root2Link = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<{root}folder/other.adoc#test, root>> link", list, dir, page1, dir.resolve("folder/.."));
+        String root2Link = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<{root}folder/other.adoc#test, root>> link", list, dir, page1, dir.resolve("folder/.."), true);
         assertThat(root2Link).isEqualTo("Some <<#test, root>> link");
 
-        String rootLinkNoAnchor = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<{root}folder/other.adoc#, root>> link", list, dir, page1, dir);
+        String rootLinkNoAnchor = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<{root}folder/other.adoc#, root>> link", list, dir, page1, dir, true);
         assertThat(rootLinkNoAnchor).isEqualTo("Some <<#_other_page, root>> link");
     }
 
@@ -110,37 +110,43 @@ public class DynamicIncludeProcessorTest {
         FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
         List<FileHolder> list = Arrays.asList(holder1, holder2);
 
-        String emptyList = DynamicIncludeProcessor.replaceXrefInlineLinks("Some content", Collections.emptyList(), dir, page1, dir);
+        String emptyList = DynamicIncludeProcessor.replaceXrefInlineLinks("Some content", Collections.emptyList(), dir, page1, dir, true);
         assertThat(emptyList).isEqualTo("Some content");
 
-        String oneElement = DynamicIncludeProcessor.replaceXrefInlineLinks("Some content", Collections.singletonList(holder1), dir, page1, dir);
+        String oneElement = DynamicIncludeProcessor.replaceXrefInlineLinks("Some content", Collections.singletonList(holder1), dir, page1, dir, true);
         assertThat(oneElement).isEqualTo("Some content");
 
-        String page2LinkStart = DynamicIncludeProcessor.replaceXrefInlineLinks("xref:other.adoc#test[other] some link", list, dir, page1, dir);
+        String page2LinkStart = DynamicIncludeProcessor.replaceXrefInlineLinks("xref:other.adoc#test[other] some link", list, dir, page1, dir, true);
         assertThat(page2LinkStart).isEqualTo("xref:#test[other] some link");
 
-        String page2Link = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:other.adoc#test[other] link", list, dir, page1, dir);
+        String page2Link = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:other.adoc#test[other] link", list, dir, page1, dir, true);
         assertThat(page2Link).isEqualTo("Some xref:#test[other] link");
 
-        String page2LinkEnd = DynamicIncludeProcessor.replaceXrefInlineLinks("Some link xref:other.adoc#test[other]", list, dir, page1, dir);
+        String page2LinkEnd = DynamicIncludeProcessor.replaceXrefInlineLinks("Some link xref:other.adoc#test[other]", list, dir, page1, dir, true);
         assertThat(page2LinkEnd).isEqualTo("Some link xref:#test[other]");
 
-        String internalLink = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some xref:#test[internal] link", list, dir, page1, dir);
+        String internalLink = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some xref:#test[internal] link", list, dir, page1, dir, true);
         assertThat(internalLink).isEqualTo("Some xref:#test[internal] link");
 
-        String externalLink = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:ext.adoc#[other] link", list, dir, page1, dir);
+        String externalLink = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:ext.adoc#[other] link", list, dir, page1, dir, false);
         assertThat(externalLink).isEqualTo("Some xref:folder/ext.adoc#[other] link");
 
-        String externalWithAnchorLink = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:ext.adoc#test[other] link", list, dir, page1, dir);
+        String externalWithAnchorLink = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:ext.adoc#test[other] link", list, dir, page1, dir, false);
         assertThat(externalWithAnchorLink).isEqualTo("Some xref:folder/ext.adoc#test[other] link");
 
-        String rootLink = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:{root}folder/other.adoc#test[root] link", list, dir, page1, dir);
+        String externalLinkReplacedToText = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:ext.adoc#[other] link", list, dir, page1, dir, true);
+        assertThat(externalLinkReplacedToText).isEqualTo("Some other link");
+
+        String externalWithAnchorLinkReplacedToText = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:ext.adoc#test[other] link", list, dir, page1, dir, true);
+        assertThat(externalWithAnchorLinkReplacedToText).isEqualTo("Some other link");
+
+        String rootLink = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:{root}folder/other.adoc#test[root] link", list, dir, page1, dir, true);
         assertThat(rootLink).isEqualTo("Some xref:#test[root] link");
 
-        String rootLinkNoAnchor = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:{root}folder/other.adoc#[root] link", list, dir, page1, dir);
+        String rootLinkNoAnchor = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:{root}folder/other.adoc#[root] link", list, dir, page1, dir, true);
         assertThat(rootLinkNoAnchor).isEqualTo("Some xref:#_other_page[root] link");
 
-        String rootLinkEmptyAnchor = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:{root}folder/other.adoc#[root] link", list, dir, page1, dir);
+        String rootLinkEmptyAnchor = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:{root}folder/other.adoc#[root] link", list, dir, page1, dir, true);
         assertThat(rootLinkEmptyAnchor).isEqualTo("Some xref:#_other_page[root] link");
     }
 
@@ -363,6 +369,11 @@ public class DynamicIncludeProcessorTest {
         XrefHolder holder25 = findHolder25.get();
         String string25 = DynamicIncludeProcessor.holderToAsciiDoc(holder25);
         assertThat(string25).isEqualTo(input25);
+
+        // Text:
+        XrefHolder holder = new XrefHolder("file", "anchor", "text", XrefHolderType.TEXT, -1, -1);
+        String string = DynamicIncludeProcessor.holderToAsciiDoc(holder);
+        assertThat(string).isEqualTo("text");
     }
 
     @Test
