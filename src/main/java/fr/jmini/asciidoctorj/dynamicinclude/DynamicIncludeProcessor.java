@@ -245,17 +245,15 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         StringBuilder sb = new StringBuilder();
 
         int startAt = 0;
-        Optional<Range> find = DOUBLE_ANGLED_BRACKET_FINDER.nextRange(content);
+        Optional<XrefHolder> find = findNextXrefDoubleAngledBracket(content, startAt);
         while (find.isPresent()) {
-            Range range = find.get();
+            XrefHolder holder = find.get();
 
-            sb.append(content.substring(startAt, range.getRangeStart()));
+            sb.append(content.substring(startAt, holder.getStartIndex()));
             sb.append("<<");
-            String rangeContent = content.substring(range.getContentStart(), range.getContentEnd());
-            int hashPosition = rangeContent.indexOf("#");
-            if (hashPosition > -1) {
-                String fileName = rangeContent.substring(0, hashPosition);
 
+            String fileName = holder.getFile();
+            if (fileName != null) {
                 Path file;
                 if (fileName.startsWith("{root}")) {
                     file = currentRoot.resolve(fileName.substring(6));
@@ -263,41 +261,68 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                     file = currentPath.getParent()
                             .resolve(fileName);
                 }
-                if (!isFilePresent(list, file)) {
+                Optional<FileHolder> findFile = findByFile(list, file);
+                if (!findFile.isPresent()) {
                     sb.append(dir.relativize(file)
                             .toString());
                 }
-                int commaPosition = rangeContent.indexOf(",", hashPosition);
-                if (commaPosition > -1) {
-                    sb.append("#");
-                    String anchor = rangeContent.substring(hashPosition + 1, commaPosition);
-                    if (anchor.trim()
-                            .isEmpty()) {
-                        Optional<FileHolder> findFile = findByFile(list, file);
-                        if (findFile.isPresent()) {
-                            sb.append(findFile.get()
-                                    .getTitleId());
-                        }
-                    } else {
-                        sb.append(anchor);
-                    }
-                } else {
-                    commaPosition = hashPosition;
+                sb.append("#");
+                if (holder.getAnchor()
+                        .trim()
+                        .isEmpty()) {
+                    sb.append(findFile.get()
+                            .getTitleId());
                 }
-
-                sb.append(rangeContent.substring(commaPosition));
-            } else {
-                sb.append(rangeContent);
+            }
+            sb.append(holder.getAnchor());
+            if (holder.getText() != null) {
+                sb.append(",");
+                sb.append(holder.getText());
             }
             sb.append(">>");
 
-            startAt = range.getRangeEnd();
-            find = DOUBLE_ANGLED_BRACKET_FINDER.nextRange(content, startAt);
+            startAt = holder.getEndIndex();
+            find = findNextXrefDoubleAngledBracket(content, startAt);
         }
+
         if (startAt < content.length()) {
             sb.append(content.substring(startAt));
         }
         return sb.toString();
+    }
+
+    public static Optional<XrefHolder> findNextXrefDoubleAngledBracket(String content, int startAt) {
+        Optional<Range> find = DOUBLE_ANGLED_BRACKET_FINDER.nextRange(content, startAt);
+        if (find.isPresent()) {
+            Range range = find.get();
+
+            String fileName;
+            String anchor;
+            String text;
+            String rangeContent = content.substring(range.getContentStart(), range.getContentEnd());
+            int hashPosition = rangeContent.indexOf("#");
+
+            int searchStart;
+            if (hashPosition > -1) {
+                fileName = rangeContent.substring(0, hashPosition);
+                searchStart = hashPosition + 1;
+            } else {
+                fileName = null;
+                searchStart = 0;
+            }
+
+            int commaPosition = rangeContent.indexOf(",", searchStart);
+            if (commaPosition > -1) {
+                anchor = rangeContent.substring(searchStart, commaPosition);
+                text = rangeContent.substring(commaPosition + 1);
+            } else {
+                anchor = rangeContent.substring(searchStart);
+                text = null;
+            }
+
+            return Optional.of(new XrefHolder(fileName, anchor, text, true, range.getRangeStart(), range.getRangeEnd()));
+        }
+        return Optional.empty();
     }
 
     public static String replaceXrefInlineLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot) {

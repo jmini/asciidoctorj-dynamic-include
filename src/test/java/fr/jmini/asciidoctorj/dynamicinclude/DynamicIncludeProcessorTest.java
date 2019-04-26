@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -93,7 +94,7 @@ public class DynamicIncludeProcessorTest {
 
         String root2Link = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<{root}folder/other.adoc#test, root>> link", list, dir, page1, dir.resolve("folder/.."));
         assertThat(root2Link).isEqualTo("Some <<#test, root>> link");
-        //
+
         String rootLinkNoAnchor = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<{root}folder/other.adoc#, root>> link", list, dir, page1, dir);
         assertThat(rootLinkNoAnchor).isEqualTo("Some <<#_other_page, root>> link");
     }
@@ -139,6 +140,72 @@ public class DynamicIncludeProcessorTest {
 
         String rootLinkEmptyAnchor = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:{root}folder/other.adoc#[root] link", list, dir, page1, dir);
         assertThat(rootLinkEmptyAnchor).isEqualTo("Some xref:#_other_page[root] link");
+    }
+
+    @Test
+    void testFindNextXrefDoubleAngledBracket() throws Exception {
+        Optional<XrefHolder> emptyList = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("Some content", 0);
+        assertThat(emptyList).isNotPresent();
+
+        Optional<XrefHolder> linkStartOpt = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("<<other.adoc#test, other>> some link", 0);
+        assertThat(linkStartOpt).isPresent();
+        XrefHolder linkStart = linkStartOpt.get();
+        assertThat(linkStart.isDoubleAngledBracketForm()).isTrue();
+        assertThat(linkStart.getStartIndex()).isEqualTo(0);
+        assertThat(linkStart.getEndIndex()).isEqualTo(26);
+        assertThat(linkStart.getFile()).isEqualTo("other.adoc");
+        assertThat(linkStart.getAnchor()).isEqualTo("test");
+        assertThat(linkStart.getText()).isEqualTo(" other");
+
+        Optional<XrefHolder> linkOpt = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("Some <<page1.adoc#sect, Other>> link", 0);
+        assertThat(linkOpt).isPresent();
+        XrefHolder link = linkOpt.get();
+        assertThat(link.isDoubleAngledBracketForm()).isTrue();
+        assertThat(link.getStartIndex()).isEqualTo(5);
+        assertThat(link.getEndIndex()).isEqualTo(31);
+        assertThat(link.getFile()).isEqualTo("page1.adoc");
+        assertThat(link.getAnchor()).isEqualTo("sect");
+        assertThat(link.getText()).isEqualTo(" Other");
+
+        Optional<XrefHolder> linkEndOpt = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("Some link <<page2.adoc#here, OTHER>>", 0);
+        assertThat(linkEndOpt).isPresent();
+        XrefHolder linkEnd = linkEndOpt.get();
+        assertThat(linkEnd.isDoubleAngledBracketForm()).isTrue();
+        assertThat(linkEnd.getStartIndex()).isEqualTo(10);
+        assertThat(linkEnd.getEndIndex()).isEqualTo(36);
+        assertThat(linkEnd.getFile()).isEqualTo("page2.adoc");
+        assertThat(linkEnd.getAnchor()).isEqualTo("here");
+        assertThat(linkEnd.getText()).isEqualTo(" OTHER");
+
+        Optional<XrefHolder> internalLinkOpt = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("Some <<test, internal>> link", 0);
+        assertThat(internalLinkOpt).isPresent();
+        XrefHolder internalLink = internalLinkOpt.get();
+        assertThat(internalLink.isDoubleAngledBracketForm()).isTrue();
+        assertThat(internalLink.getStartIndex()).isEqualTo(5);
+        assertThat(internalLink.getEndIndex()).isEqualTo(23);
+        assertThat(internalLink.getFile()).isNull();
+        assertThat(internalLink.getAnchor()).isEqualTo("test");
+        assertThat(internalLink.getText()).isEqualTo(" internal");
+
+        Optional<XrefHolder> internalNoTextOpt = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("Some <<test>> link", 0);
+        assertThat(internalNoTextOpt).isPresent();
+        XrefHolder internalNoText = internalNoTextOpt.get();
+        assertThat(internalNoText.isDoubleAngledBracketForm()).isTrue();
+        assertThat(internalNoText.getStartIndex()).isEqualTo(5);
+        assertThat(internalNoText.getEndIndex()).isEqualTo(13);
+        assertThat(internalNoText.getFile()).isNull();
+        assertThat(internalNoText.getAnchor()).isEqualTo("test");
+        assertThat(internalNoText.getText()).isNull();
+
+        Optional<XrefHolder> noTextOpt = DynamicIncludeProcessor.findNextXrefDoubleAngledBracket("Some <<other.adoc#test>> link", 0);
+        assertThat(noTextOpt).isPresent();
+        XrefHolder noText = noTextOpt.get();
+        assertThat(noText.isDoubleAngledBracketForm()).isTrue();
+        assertThat(noText.getStartIndex()).isEqualTo(5);
+        assertThat(noText.getEndIndex()).isEqualTo(24);
+        assertThat(noText.getFile()).isEqualTo("other.adoc");
+        assertThat(noText.getAnchor()).isEqualTo("test");
+        assertThat(noText.getText()).isNull();
     }
 
     @Test
