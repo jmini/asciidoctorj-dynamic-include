@@ -12,8 +12,10 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -58,10 +60,13 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         Path dir = Paths.get(reader.getDir());
         String glob = target.substring(PREFIX.length());
 
-        List<Path> files = findFiles(dir, glob);
-
         String order = readKey(document, attributes, "order", "dynamic-include-order");
         boolean externalXrefAsText = readKey(document, attributes, "external-xref-as-text", "dynamic-include-external-xref-as-text") != null;
+
+        String scopes = readKey(document, attributes, "scopes", "dynamic-include-scopes");
+        String areas = readKey(document, attributes, "areas", "dynamic-include-areas");
+
+        List<Path> files = findFiles(dir, glob, scopes, areas);
 
         Path root;
         if (document.hasAttribute("root")) {
@@ -153,9 +158,12 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return null;
     }
 
-    public static List<Path> findFiles(Path dir, String glob) {
+    public static List<Path> findFiles(Path dir, String glob, String scopesValue, String areasValue) {
         final PathMatcher matcher = FileSystems.getDefault()
                 .getPathMatcher("glob:" + dir + File.separator + glob);
+
+        List<String> scopes = valueToList(scopesValue);
+        List<String> areas = valueToList(areasValue);
 
         List<Path> result = new ArrayList<>();
         try {
@@ -163,7 +171,27 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     if (matcher.matches(file)) {
-                        result.add(file);
+                        if (scopesValue != null || areasValue != null) {
+                            Path path = dir.relativize(file);
+                            Iterator<Path> iterator = path.iterator();
+                            if (!scopes.isEmpty() && iterator.hasNext()) {
+                                String scope = iterator.next()
+                                        .toString();
+                                if (scopes.contains(scope)) {
+                                    if (areasValue == null) {
+                                        result.add(file);
+                                    } else if (!scopes.isEmpty() && iterator.hasNext()) {
+                                        String area = iterator.next()
+                                                .toString();
+                                        if (areas.contains(area)) {
+                                            result.add(file);
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            result.add(file);
+                        }
                     }
                     return FileVisitResult.CONTINUE;
                 }
@@ -178,6 +206,13 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             e.printStackTrace();
         }
         return Collections.unmodifiableList(result);
+    }
+
+    private static List<String> valueToList(String topicsValue) {
+        if (topicsValue != null) {
+            return Arrays.asList(topicsValue.split(":"));
+        }
+        return Collections.emptyList();
     }
 
     public static <T> List<T> sortList(List<T> list, List<String> orderedKeys, Function<T, String> keyExtractor) {

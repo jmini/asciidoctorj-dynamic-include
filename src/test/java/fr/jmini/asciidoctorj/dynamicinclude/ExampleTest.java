@@ -62,6 +62,21 @@ public class ExampleTest {
                 .getLineNumber()).isEqualTo(10);
     }
 
+    @Test
+    public void testExample4Test1() throws Exception {
+        runTest("example4", "test1");
+    }
+
+    @Test
+    public void testExample4Test2() throws Exception {
+        runTest("example4", "test2");
+    }
+
+    @Test
+    public void testExample4Test3() throws Exception {
+        runTest("example4", "test3");
+    }
+
     private List<LogRecord> runTest(String folder, String fileName) throws IOException, URISyntaxException {
         Path exampleFolder = Paths.get("src/test/resources/" + folder)
                 .toAbsolutePath();

@@ -1,3 +1,0 @@
-== Ipsum
-
-scope1.topicA

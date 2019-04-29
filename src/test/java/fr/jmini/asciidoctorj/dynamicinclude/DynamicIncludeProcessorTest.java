@@ -19,23 +19,94 @@ public class DynamicIncludeProcessorTest {
 
     @Test
     void testFindFiles() throws Exception {
-        Path dir = Paths.get("src/test/resources/example1");
+        Path example1 = Paths.get("src/test/resources/example1");
 
-        List<String> list1 = findFiles(dir, "pages/*.adoc");
+        List<String> list1 = findFiles(example1, "pages/*.adoc", null, null);
         assertThat(list1).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc");
 
-        List<String> list2 = findFiles(dir, "**/*.adoc");
+        List<String> list2 = findFiles(example1, "**/*.adoc", null, null);
         assertThat(list2).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc");
 
-        List<String> list3 = findFiles(dir.resolve("pages"), "*.adoc");
+        List<String> list3 = findFiles(example1.resolve("pages"), "*.adoc", null, null);
         assertThat(list3).containsExactly("page1.adoc", "page2.adoc", "zpage.adoc");
 
-        List<String> list4 = findFiles(dir, "pages/page*.adoc");
+        List<String> list4 = findFiles(example1, "pages/page*.adoc", null, null);
         assertThat(list4).containsExactly("pages/page1.adoc", "pages/page2.adoc");
+
+        List<String> list5 = findFiles(example1, "**/*.adoc", "pages", null);
+        assertThat(list5).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc");
+
+        List<String> list6 = findFiles(example1, "**/*.adoc", "xxx", null);
+        assertThat(list6).isEmpty();
+
+        List<String> list7 = findFiles(example1.resolve("pages"), "*.adoc", "xxx", null);
+        assertThat(list7).isEmpty();
+
+        Path example4 = Paths.get("src/test/resources/example4");
+
+        List<String> list8 = findFiles(example4, "**/*.adoc", "scope1", null);
+        assertThat(list8).containsExactly(
+                "scope1/areaA/ipsum.adoc",
+                "scope1/areaA/lorem.adoc",
+                "scope1/areaB/main.adoc",
+                "scope1/areaB/sub1/sub1.adoc",
+                "scope1/areaB/sub2/sub2b.adoc");
+
+        List<String> list9 = findFiles(example4, "**/*.adoc", "scope1:scope2", null);
+        assertThat(list9).containsExactly(
+                "scope1/areaA/ipsum.adoc",
+                "scope1/areaA/lorem.adoc",
+                "scope1/areaB/main.adoc",
+                "scope1/areaB/sub1/sub1.adoc",
+                "scope1/areaB/sub2/sub2b.adoc",
+                "scope2/areaA/ipsum.adoc",
+                "scope2/areaA/lorem.adoc",
+                "scope2/areaC/areaC.adoc");
+
+        List<String> list10 = findFiles(example4, "**/*.adoc", "scope1:scope2:xxx", null);
+        assertThat(list10).containsExactly(
+                "scope1/areaA/ipsum.adoc",
+                "scope1/areaA/lorem.adoc",
+                "scope1/areaB/main.adoc",
+                "scope1/areaB/sub1/sub1.adoc",
+                "scope1/areaB/sub2/sub2b.adoc",
+                "scope2/areaA/ipsum.adoc",
+                "scope2/areaA/lorem.adoc",
+                "scope2/areaC/areaC.adoc");
+
+        List<String> list11 = findFiles(example4, "**/*.adoc", "scope1:scope2", "xxx");
+        assertThat(list11).isEmpty();
+
+        List<String> list12 = findFiles(example4, "**/*.adoc", "scope1:scope2", "areaA");
+        assertThat(list12).containsExactly(
+                "scope1/areaA/ipsum.adoc",
+                "scope1/areaA/lorem.adoc",
+                "scope2/areaA/ipsum.adoc",
+                "scope2/areaA/lorem.adoc");
+
+        List<String> list13 = findFiles(example4, "**/*.adoc", "scope1:scope2:xxx", "areaA:areaB");
+        assertThat(list13).containsExactly(
+                "scope1/areaA/ipsum.adoc",
+                "scope1/areaA/lorem.adoc",
+                "scope1/areaB/main.adoc",
+                "scope1/areaB/sub1/sub1.adoc",
+                "scope1/areaB/sub2/sub2b.adoc",
+                "scope2/areaA/ipsum.adoc",
+                "scope2/areaA/lorem.adoc");
+
+        List<String> list14 = findFiles(example4, "**/*.adoc", "scope1:scope2:xxx", "areaA:areaB:xxx");
+        assertThat(list14).containsExactly(
+                "scope1/areaA/ipsum.adoc",
+                "scope1/areaA/lorem.adoc",
+                "scope1/areaB/main.adoc",
+                "scope1/areaB/sub1/sub1.adoc",
+                "scope1/areaB/sub2/sub2b.adoc",
+                "scope2/areaA/ipsum.adoc",
+                "scope2/areaA/lorem.adoc");
     }
 
-    private List<String> findFiles(Path dir, String glob) throws IOException {
-        List<String> list = DynamicIncludeProcessor.findFiles(dir, glob)
+    private List<String> findFiles(Path dir, String glob, String scopesValue, String areasValue) throws IOException {
+        List<String> list = DynamicIncludeProcessor.findFiles(dir, glob, scopesValue, areasValue)
                 .stream()
                 .map(p -> dir.relativize(p)
                         .toString())

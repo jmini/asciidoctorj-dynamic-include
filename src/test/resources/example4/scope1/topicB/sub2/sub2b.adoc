@@ -1,3 +1,0 @@
-=== Sub2b
-
-scope1.topicB.sub2
