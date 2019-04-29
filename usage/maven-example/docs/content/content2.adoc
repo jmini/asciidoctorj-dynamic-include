@@ -1,8 +1,8 @@
 // {root} points to the docs folder:
 ifndef::root[]
-:root:
+:root: ../
 endif::[]
 
-= Maven example
+//=== Content 2
 
-include::dynamic:**/*.adoc[]
+Lorem dolor.
