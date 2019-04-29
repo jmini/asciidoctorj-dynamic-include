@@ -6,4 +6,4 @@ endif::[]
 
 == Example 3
 
-include::dynamic:**/*.adoc[order="pages.txt"]
+include::dynamic:**/*.adoc[order="pages.txt", external-xref-as-text="true"]

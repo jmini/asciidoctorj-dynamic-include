@@ -16,4 +16,6 @@ See <<{root}content/content1.adoc#_section_1, section 1>>.
 
 See <<{root}content/content1.adoc#_section_2, section 2>>.
 
+See <<other.adoc#, other page>>.
+
 Lorem dolor.
