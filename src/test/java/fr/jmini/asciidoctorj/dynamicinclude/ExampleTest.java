@@ -36,8 +36,13 @@ public class ExampleTest {
     }
 
     @Test
+    public void testExample1Index3() throws Exception {
+        runTest("example1", "index3");
+    }
+
+    @Test
     public void testExample1Pub() throws Exception {
-        runTest("example1/pub", "pup");
+        runTest("example1/pub", "pub");
     }
 
     @Test
@@ -104,7 +109,6 @@ public class ExampleTest {
         OptionsBuilder optionsBuilder = OptionsBuilder.options()
                 .attributes(attributesBuilder)
                 .baseDir(exampleFolder.toFile())
-                .option("sourcemap", true)
                 .docType("article")
                 .safe(SafeMode.UNSAFE);
         String html = asciidoctor.convert(content, optionsBuilder);

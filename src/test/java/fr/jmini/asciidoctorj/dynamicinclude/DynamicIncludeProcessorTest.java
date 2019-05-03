@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -126,6 +127,57 @@ public class DynamicIncludeProcessorTest {
     }
 
     @Test
+    void testConvertGlobToRegex() throws Exception {
+        // star becomes dot star
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl*b")).isEqualTo("gl.*b");
+
+        // escaped star is unchanged
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl\\*b")).isEqualTo("gl\\*b");
+
+        // question mark becomes dot
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl?b")).isEqualTo("gl.b");
+
+        // escaped question mark is unchanged
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl\\?b")).isEqualTo("gl\\?b");
+
+        // character classes dont need conversion
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl[-o]b")).isEqualTo("gl[-o]b");
+
+        // escaped classes are unchanged
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl\\[-o\\]b")).isEqualTo("gl\\[-o\\]b");
+
+        // negation in character classes
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl[!a-n!p-z]b")).isEqualTo("gl[^a-n!p-z]b");
+
+        // nested negation in character classes
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl[[!a-n]!p-z]b")).isEqualTo("gl[[^a-n]!p-z]b");
+
+        // escape carat if it is the first char in a character class
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl[^o]b")).isEqualTo("gl[\\^o]b");
+
+        // meta chars are escaped
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl?*.()+|^$@%b")).isEqualTo("gl..*\\.\\(\\)\\+\\|\\^\\$\\@\\%b");
+
+        // meta chars in character classes don't need escaping
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl[?*.()+|^$@%]b")).isEqualTo("gl[?*.()+|^$@%]b");
+
+        // escaped backslash is unchanged
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl\\\\b")).isEqualTo("gl\\\\b");
+
+        // slashQ and slashE are escaped
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("\\Qglob\\E")).isEqualTo("\\\\Qglob\\\\E");
+
+        // braces are turned into groups
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("{glob,regex}")).isEqualTo("(glob|regex)");
+
+        // escaped braces are unchanged
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("\\{glob\\}")).isEqualTo("\\{glob\\}");
+
+        // commas dont need escaping
+        assertThat(DynamicIncludeProcessor.convertGlobToRegex("{glob\\,regex},")).isEqualTo("(glob,regex),");
+    }
+
+    @Test
     void testSortList() throws Exception {
         List<Integer> input = Arrays.asList(10, 24, 52, 3, 43, 91);
 
@@ -140,6 +192,91 @@ public class DynamicIncludeProcessorTest {
         List<String> order3 = Arrays.asList("91", "3");
         List<Integer> list3 = DynamicIncludeProcessor.sortList(input, order3, i -> i.toString());
         assertThat(list3).containsExactly(91, 3, 10, 24, 43, 52);
+
+        List<String> order4 = Arrays.asList("[0-9]", "[0-9]+");
+        List<Integer> list4 = DynamicIncludeProcessor.sortList(input, order4, i -> i.toString());
+        assertThat(list4).containsExactly(3, 10, 24, 43, 52, 91);
+    }
+
+    @Test
+    void testfindFilesAndSort() throws Exception {
+        List<String> list1 = findFilesAndSort(Collections.emptyList());
+        assertThat(list1).containsExactly(
+                "scope1/areaA/ipsum.adoc",
+                "scope1/areaA/lorem.adoc",
+                "scope1/areaB/main.adoc",
+                "scope1/areaB/sub1/sub1.adoc",
+                "scope1/areaB/sub2/sub2b.adoc",
+                "scope2/areaA/ipsum.adoc",
+                "scope2/areaA/lorem.adoc");
+
+        List<String> list2 = findFilesAndSort(Arrays.asList(
+                "scope1/areaA/ipsum.adoc",
+                "scope2/areaA/ipsum.adoc",
+                "scope1/areaA/lorem.adoc",
+                "scope2/areaA/lorem.adoc",
+                "scope1/areaB/sub2/sub2b.adoc",
+                "scope1/areaB/sub1/sub1.adoc",
+                "scope1/areaB/main.adoc"));
+        assertThat(list2).containsExactly(
+                "scope1/areaA/ipsum.adoc",
+                "scope2/areaA/ipsum.adoc",
+                "scope1/areaA/lorem.adoc",
+                "scope2/areaA/lorem.adoc",
+                "scope1/areaB/sub2/sub2b.adoc",
+                "scope1/areaB/sub1/sub1.adoc",
+                "scope1/areaB/main.adoc");
+
+        List<String> list3 = findFilesAndSort(Arrays.asList(
+                "scope2/*/*.adoc",
+                "scope1/*/*/*.adoc",
+                "scope1/*/*.adoc"));
+        assertThat(list3).containsExactly(
+                "scope2/areaA/ipsum.adoc",
+                "scope2/areaA/lorem.adoc",
+                "scope1/areaB/sub1/sub1.adoc",
+                "scope1/areaB/sub2/sub2b.adoc",
+                "scope1/areaA/ipsum.adoc",
+                "scope1/areaA/lorem.adoc",
+                "scope1/areaB/main.adoc");
+
+        List<String> list4 = findFilesAndSort(Arrays.asList(
+                "scope2/*",
+                "scope1/*"));
+        assertThat(list4).containsExactly(
+                "scope2/areaA/ipsum.adoc",
+                "scope2/areaA/lorem.adoc",
+                "scope1/areaA/ipsum.adoc",
+                "scope1/areaA/lorem.adoc",
+                "scope1/areaB/main.adoc",
+                "scope1/areaB/sub1/sub1.adoc",
+                "scope1/areaB/sub2/sub2b.adoc");
+
+        List<String> list5 = findFilesAndSort(Arrays.asList(
+                "*/areaB/*",
+                "*/areaA/*"));
+        assertThat(list5).containsExactly(
+                "scope1/areaB/main.adoc",
+                "scope1/areaB/sub1/sub1.adoc",
+                "scope1/areaB/sub2/sub2b.adoc",
+                "scope1/areaA/ipsum.adoc",
+                "scope1/areaA/lorem.adoc",
+                "scope2/areaA/ipsum.adoc",
+                "scope2/areaA/lorem.adoc");
+    }
+
+    private List<String> findFilesAndSort(List<String> sortOrder) throws IOException {
+        Path example4 = Paths.get("src/test/resources/example4");
+        List<Path> list = DynamicIncludeProcessor.findFiles(example4, "**/*.adoc", "scope1:scope2", "areaA:areaB");
+        List<String> order = sortOrder.stream()
+                .map(DynamicIncludeProcessor::convertGlobToRegex)
+                .collect(Collectors.toList());
+        Function<Path, String> toKey = p -> example4.relativize(p)
+                .toString();
+        return DynamicIncludeProcessor.sortList(list, order, toKey)
+                .stream()
+                .map(toKey)
+                .collect(Collectors.toList());
     }
 
     @Test

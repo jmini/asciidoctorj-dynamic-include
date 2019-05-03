@@ -91,6 +91,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                             .map(s -> orderFileFolder.resolve(s))
                             .map(p -> dir.relativize(p)
                                     .toString())
+                            .map(DynamicIncludeProcessor::convertGlobToRegex)
                             .collect(Collectors.toList());
                 } else {
                     System.out.println("Could not find order file:" + orderFile.toAbsolutePath());
@@ -245,19 +246,129 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return Collections.emptyList();
     }
 
-    public static <T> List<T> sortList(List<T> list, List<String> orderedKeys, Function<T, String> keyExtractor) {
+    /**
+     * Converts a standard POSIX Shell globbing pattern into a regular expression pattern. The result can be used with the standard {@link java.util.regex} API to recognize strings which match the glob pattern.
+     * <p>
+     * See also, the POSIX Shell language: http://pubs.opengroup.org/onlinepubs/009695399/utilities/xcu_chap02.html#tag_02_13_01
+     *
+     * @param pattern
+     *            A glob pattern.
+     * @return A regex pattern to recognize the given glob pattern.
+     */
+    public static final String convertGlobToRegex(String pattern) {
+        StringBuilder sb = new StringBuilder(pattern.length());
+        int inGroup = 0;
+        int inClass = 0;
+        int firstIndexInClass = -1;
+        char[] arr = pattern.toCharArray();
+        for (int i = 0; i < arr.length; i++) {
+            char ch = arr[i];
+            switch (ch) {
+            case '\\':
+                if (++i >= arr.length) {
+                    sb.append('\\');
+                } else {
+                    char next = arr[i];
+                    switch (next) {
+                    case ',':
+                        // escape not needed
+                        break;
+                    case 'Q':
+                    case 'E':
+                        // extra escape needed
+                        sb.append('\\');
+                    default:
+                        sb.append('\\');
+                    }
+                    sb.append(next);
+                }
+                break;
+            case '*':
+                if (inClass == 0)
+                    sb.append(".*");
+                else
+                    sb.append('*');
+                break;
+            case '?':
+                if (inClass == 0)
+                    sb.append('.');
+                else
+                    sb.append('?');
+                break;
+            case '[':
+                inClass++;
+                firstIndexInClass = i + 1;
+                sb.append('[');
+                break;
+            case ']':
+                inClass--;
+                sb.append(']');
+                break;
+            case '.':
+            case '(':
+            case ')':
+            case '+':
+            case '|':
+            case '^':
+            case '$':
+            case '@':
+            case '%':
+                if (inClass == 0 || (firstIndexInClass == i && ch == '^'))
+                    sb.append('\\');
+                sb.append(ch);
+                break;
+            case '!':
+                if (firstIndexInClass == i)
+                    sb.append('^');
+                else
+                    sb.append('!');
+                break;
+            case '{':
+                inGroup++;
+                sb.append('(');
+                break;
+            case '}':
+                inGroup--;
+                sb.append(')');
+                break;
+            case ',':
+                if (inGroup > 0)
+                    sb.append('|');
+                else
+                    sb.append(',');
+                break;
+            default:
+                sb.append(ch);
+            }
+        }
+        return sb.toString();
+    }
+
+    public static <T> List<T> sortList(List<T> list, List<String> orderedKeyPatterns, Function<T, String> keyExtractor) {
+        Comparator<T> comparator;
+        if (orderedKeyPatterns.isEmpty()) {
+            comparator = (t1, t2) -> 0;
+        } else {
+            Map<String, Integer> orderMap = list.stream()
+                    .collect(Collectors.toMap(keyExtractor, v -> orderOrMaxValue(orderedKeyPatterns, keyExtractor.apply(v), list.size())));
+            comparator = Comparator.comparingInt((T i) -> orderMap.get(keyExtractor.apply(i)));
+        }
+
         return list.stream()
-                .sorted(Comparator.comparingInt((T i) -> indexOfOrMaxValue(orderedKeys, keyExtractor.apply(i), list.size()))
-                        .thenComparing(Comparator.comparing(keyExtractor)))
+                .sorted(comparator.thenComparing(Comparator.comparing(keyExtractor)))
                 .collect(Collectors.toList());
     }
 
-    private static int indexOfOrMaxValue(List<String> orderedKeys, String value, int maxValue) {
-        int index = orderedKeys.indexOf(value);
-        if (index == -1) {
-            return maxValue;
+    private static int orderOrMaxValue(List<String> orderedKeyPatterns, String value, int maxValue) {
+        for (int i = 0; i < orderedKeyPatterns.size(); i++) {
+            String p = orderedKeyPatterns.get(i);
+            if (value.matches(p)) {
+                return i;
+            }
         }
-        return index;
+
+        System.out.println("Did not find any information order for '" + value + "', putting it at the end of the document");
+        return maxValue;
     }
 
     public static FileHolder createFileHolder(Path dir, Path p, String idprefix, String idseparator) {
