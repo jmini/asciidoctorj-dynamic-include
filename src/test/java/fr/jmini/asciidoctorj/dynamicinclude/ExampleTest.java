@@ -36,6 +36,11 @@ public class ExampleTest {
     }
 
     @Test
+    public void testExample1Pub() throws Exception {
+        runTest("example1/pub", "index");
+    }
+
+    @Test
     public void testExample2() throws Exception {
         List<LogRecord> logs = runTest("example2", "index");
         assertThat(logs).hasSize(1);

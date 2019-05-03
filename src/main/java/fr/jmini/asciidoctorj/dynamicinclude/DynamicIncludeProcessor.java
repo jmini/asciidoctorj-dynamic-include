@@ -159,15 +159,18 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
     }
 
     public static List<Path> findFiles(Path dir, String glob, String scopesValue, String areasValue) {
+        Path normalizedGlob = dir.resolve(glob)
+                .normalize();
         final PathMatcher matcher = FileSystems.getDefault()
-                .getPathMatcher("glob:" + dir + File.separator + glob);
+                .getPathMatcher("glob:" + normalizedGlob);
 
         List<String> scopes = valueToList(scopesValue);
         List<String> areas = valueToList(areasValue);
 
         List<Path> result = new ArrayList<>();
         try {
-            Files.walkFileTree(dir, new SimpleFileVisitor<Path>() {
+            Path root = findRoot(normalizedGlob);
+            Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     if (matcher.matches(file)) {
@@ -206,6 +209,23 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             e.printStackTrace();
         }
         return Collections.unmodifiableList(result);
+    }
+
+    private static Path findRoot(Path dir) {
+        Path root;
+        if (dir.isAbsolute()) {
+            root = dir.getRoot();
+        } else {
+            root = Paths.get("");
+        }
+        for (Path path : dir) {
+            if (path.toString()
+                    .contains("*")) {
+                return root;
+            }
+            root = root.resolve(path);
+        }
+        return root;
     }
 
     private static List<String> valueToList(String topicsValue) {
