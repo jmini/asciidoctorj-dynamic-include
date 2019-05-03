@@ -25,7 +25,7 @@ public class DynamicIncludeProcessorTest {
         assertThat(list101).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc");
 
         List<String> list102 = findFiles(example1, "**/*.adoc", null, null);
-        assertThat(list102).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc", "pub/index.adoc");
+        assertThat(list102).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc", "pub/pub.adoc", "pub/pub1.adoc");
 
         List<String> list103 = findFiles(example1.resolve("pages"), "*.adoc", null, null);
         assertThat(list103).containsExactly("page1.adoc", "page2.adoc", "zpage.adoc");

@@ -79,11 +79,21 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         List<String> orderList;
         if (order != null) {
             try {
-                Path oderFile = dir.resolve(order);
-                if (Files.isReadable(oderFile)) {
-                    orderList = Files.readAllLines(oderFile);
+                Path orderFile = dir.resolve(order);
+                Path orderFileFolder = orderFile.getParent();
+                if (Files.isReadable(orderFile)) {
+                    orderList = Files.readAllLines(orderFile)
+                            .stream()
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .filter(s -> !s.startsWith("//"))
+                            .filter(s -> !s.startsWith("#"))
+                            .map(s -> orderFileFolder.resolve(s))
+                            .map(p -> dir.relativize(p)
+                                    .toString())
+                            .collect(Collectors.toList());
                 } else {
-                    System.out.println("Could not find order file:" + oderFile.toAbsolutePath());
+                    System.out.println("Could not find order file:" + orderFile.toAbsolutePath());
                     orderList = Collections.emptyList();
                 }
             } catch (IOException e) {

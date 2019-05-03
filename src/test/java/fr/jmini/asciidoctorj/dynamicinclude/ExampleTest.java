@@ -37,7 +37,12 @@ public class ExampleTest {
 
     @Test
     public void testExample1Pub() throws Exception {
-        runTest("example1/pub", "index");
+        runTest("example1/pub", "pup");
+    }
+
+    @Test
+    public void testExample1Pub1() throws Exception {
+        runTest("example1/pub", "pub1");
     }
 
     @Test

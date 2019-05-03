@@ -2,4 +2,4 @@
 
 :dynamic-include-order: order1.txt
 
-include::dynamic:**/*.adoc[]
+include::dynamic:pages/*.adoc[]
