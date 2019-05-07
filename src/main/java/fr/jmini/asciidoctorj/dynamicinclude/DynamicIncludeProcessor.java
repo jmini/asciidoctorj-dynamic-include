@@ -71,16 +71,17 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         List<String> scopes = valueToList(scopesValue);
         List<String> scopesOrder = scopesOrderValue != null ? valueToList(scopesOrderValue) : scopes;
         List<String> areas = valueToList(areasValue);
-        List<String> areasOrder = areasOrderValue != null ? valueToList(areasOrderValue) : scopes;
-        List<Path> files = findFiles(dir, glob, scopes, areas);
+        List<String> areasOrder = areasOrderValue != null ? valueToList(areasOrderValue) : areas;
 
         Path root;
         if (document.hasAttribute("root")) {
             root = dir.resolve(document.getAttribute("root")
-                    .toString());
+                    .toString())
+                    .normalize();
         } else {
             root = dir;
         }
+        List<Path> files = findFiles(dir, root, glob, scopes, areas);
 
         List<String> patternOrder;
         if (order != null) {
@@ -118,11 +119,11 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 .toString();
 
         List<FileHolder> contentFiles = files.stream()
-                .map(p -> createFileHolder(dir, p, idprefix, idseparator))
+                .map(p -> createFileHolder(dir, root, p, idprefix, idseparator))
                 .collect(Collectors.toList());
 
         List<FileHolder> list = sortList(contentFiles, patternOrder, scopesOrder, areasOrder);
-        //list.forEach(h -> System.out.println("(dynamic-include) including:" + h.getKey()));
+        list.forEach(h -> System.out.println("(dynamic-include) including:" + h.getKey()));
 
         for (int i = list.size() - 1; i >= 0; i--) {
             FileHolder item = list.get(i);
@@ -176,7 +177,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return null;
     }
 
-    public static List<Path> findFiles(Path dir, String glob, List<String> scopes, List<String> areas) {
+    public static List<Path> findFiles(Path dir, Path root, String glob, List<String> scopes, List<String> areas) {
         Path normalizedGlob = dir.resolve(glob)
                 .normalize();
         final PathMatcher matcher = FileSystems.getDefault()
@@ -184,13 +185,13 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
         List<Path> result = new ArrayList<>();
         try {
-            Path root = findRoot(normalizedGlob);
-            Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+            Path walkRoot = findWalkRoot(normalizedGlob);
+            Files.walkFileTree(walkRoot, new SimpleFileVisitor<Path>() {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     if (matcher.matches(file)) {
                         if (!scopes.isEmpty() || !areas.isEmpty()) {
-                            Path path = dir.relativize(file);
+                            Path path = root.relativize(file);
                             Iterator<Path> iterator = path.iterator();
                             if (!scopes.isEmpty() && iterator.hasNext()) {
                                 String scope = iterator.next()
@@ -226,7 +227,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return Collections.unmodifiableList(result);
     }
 
-    private static Path findRoot(Path dir) {
+    private static Path findWalkRoot(Path dir) {
         Path root;
         if (dir.isAbsolute()) {
             root = dir.getRoot();
@@ -400,10 +401,11 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return (indexOf > -1) ? indexOf : maxValue;
     }
 
-    public static FileHolder createFileHolder(Path dir, Path p, String idprefix, String idseparator) {
-        Path relativePath = dir.relativize(p);
-        String key = relativePath.toString();
-        Iterator<Path> iterator = relativePath.iterator();
+    public static FileHolder createFileHolder(Path dir, Path root, Path p, String idprefix, String idseparator) {
+        String key = dir.relativize(p)
+                .toString();
+        Iterator<Path> iterator = root.relativize(p)
+                .iterator();
         String scope;
         String area;
         if (iterator.hasNext()) {

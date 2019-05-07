@@ -1,3 +1,3 @@
 == Dynamic include test 1
 
-include::dynamic:**/*.adoc[order="pages.txt"]
+include::dynamic:s*/**/*.adoc[order="pages.txt"]

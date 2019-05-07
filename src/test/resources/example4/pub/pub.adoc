@@ -1,0 +1,5 @@
+:root: ../
+
+== Dynamic Include Pub
+
+include::dynamic:../s*/**/*.adoc[scopes="scope3:scope2", areas="areaD:areaA"]

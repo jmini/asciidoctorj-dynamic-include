@@ -118,7 +118,7 @@ public class DynamicIncludeProcessorTest {
     }
 
     private List<String> findFiles(Path dir, String glob, List<String> scopes, List<String> areas) throws IOException {
-        List<String> list = DynamicIncludeProcessor.findFiles(dir, glob, scopes, areas)
+        List<String> list = DynamicIncludeProcessor.findFiles(dir, dir, glob, scopes, areas)
                 .stream()
                 .map(p -> dir.relativize(p)
                         .toString())
@@ -342,7 +342,7 @@ public class DynamicIncludeProcessorTest {
 
     private List<String> findFilesAndSort(List<String> sortOrder) throws IOException {
         Path example4 = Paths.get("src/test/resources/example4");
-        List<Path> list = DynamicIncludeProcessor.findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2"), Arrays.asList("areaA", "areaB"));
+        List<Path> list = DynamicIncludeProcessor.findFiles(example4, example4, "**/*.adoc", Arrays.asList("scope1", "scope2"), Arrays.asList("areaA", "areaB"));
         List<String> order = sortOrder.stream()
                 .map(DynamicIncludeProcessor::convertGlobToRegex)
                 .collect(Collectors.toList());
@@ -676,20 +676,20 @@ public class DynamicIncludeProcessorTest {
                 .toAbsolutePath();
 
         Path path1 = dir.resolve("example2/content/content1.adoc");
-        FileHolder holder1 = DynamicIncludeProcessor.createFileHolder(dir, path1, "_", "_");
+        FileHolder holder1 = DynamicIncludeProcessor.createFileHolder(dir, dir, path1, "_", "_");
         assertThat(holder1.getKey()).isEqualTo("example2/content/content1.adoc");
         assertThat(holder1.getTitleType()).isEqualTo(TitleType.PRESENT);
         assertThat(holder1.getTitle()).isEqualTo("Content 1");
         assertThat(holder1.getTitleEnd()).isGreaterThan(90);
 
         Path path2 = dir.resolve("example1/pages/page2.adoc");
-        FileHolder holder2 = DynamicIncludeProcessor.createFileHolder(dir, path2, "_", "_");
+        FileHolder holder2 = DynamicIncludeProcessor.createFileHolder(dir, dir, path2, "_", "_");
         assertThat(holder2.getKey()).isEqualTo("example1/pages/page2.adoc");
         assertThat(holder2.getTitleType()).isEqualTo(TitleType.ABSENT);
         assertThat(holder2.getTitleEnd()).isEqualTo(0);
 
         Path path3 = dir.resolve("page.adoc");
-        FileHolder holder3 = DynamicIncludeProcessor.createFileHolder(dir, path3, "_", "_");
+        FileHolder holder3 = DynamicIncludeProcessor.createFileHolder(dir, dir, path3, "_", "_");
         assertThat(holder3.getKey()).isEqualTo("page.adoc");
         assertThat(holder3.getTitleType()).isEqualTo(TitleType.COMMENTED);
         assertThat(holder3.getTitle()).isEqualTo("Page Test");
