@@ -99,7 +99,7 @@ public class ExampleTest {
 
     @Test
     public void testExample4Pub() throws Exception {
-        runTest("example4/pub", "pub");
+        runTest("example4_publish", "pub");
     }
 
     private List<LogRecord> runTest(String folder, String fileName) throws IOException, URISyntaxException {
