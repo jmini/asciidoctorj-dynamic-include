@@ -63,9 +63,13 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         String order = readKey(document, attributes, "order", "dynamic-include-order");
         boolean externalXrefAsText = readKey(document, attributes, "external-xref-as-text", "dynamic-include-external-xref-as-text") != null;
 
-        String scopes = readKey(document, attributes, "scopes", "dynamic-include-scopes");
-        String areas = readKey(document, attributes, "areas", "dynamic-include-areas");
+        String scopesValue = readKey(document, attributes, "scopes", "dynamic-include-scopes");
+        String scopesOrderValue = readKey(document, attributes, "scopes-order", "dynamic-include-scopes-order");
+        String areasValue = readKey(document, attributes, "areas", "dynamic-include-areas");
+        String areasOrderValue = readKey(document, attributes, "areas-order", "dynamic-include-areas-order");
 
+        List<String> scopes = valueToList(scopesValue);
+        List<String> areas = valueToList(areasValue);
         List<Path> files = findFiles(dir, glob, scopes, areas);
 
         Path root;
@@ -169,14 +173,11 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return null;
     }
 
-    public static List<Path> findFiles(Path dir, String glob, String scopesValue, String areasValue) {
+    public static List<Path> findFiles(Path dir, String glob, List<String> scopes, List<String> areas) {
         Path normalizedGlob = dir.resolve(glob)
                 .normalize();
         final PathMatcher matcher = FileSystems.getDefault()
                 .getPathMatcher("glob:" + normalizedGlob);
-
-        List<String> scopes = valueToList(scopesValue);
-        List<String> areas = valueToList(areasValue);
 
         List<Path> result = new ArrayList<>();
         try {
@@ -185,14 +186,14 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 @Override
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     if (matcher.matches(file)) {
-                        if (scopesValue != null || areasValue != null) {
+                        if (!scopes.isEmpty() || !areas.isEmpty()) {
                             Path path = dir.relativize(file);
                             Iterator<Path> iterator = path.iterator();
                             if (!scopes.isEmpty() && iterator.hasNext()) {
                                 String scope = iterator.next()
                                         .toString();
                                 if (scopes.contains(scope)) {
-                                    if (areasValue == null) {
+                                    if (areas.isEmpty()) {
                                         result.add(file);
                                     } else if (!scopes.isEmpty() && iterator.hasNext()) {
                                         String area = iterator.next()

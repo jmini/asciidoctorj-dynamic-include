@@ -22,40 +22,40 @@ public class DynamicIncludeProcessorTest {
     void testFindFiles() throws Exception {
         Path example1 = Paths.get("src/test/resources/example1");
 
-        List<String> list101 = findFiles(example1, "pages/*.adoc", null, null);
+        List<String> list101 = findFiles(example1, "pages/*.adoc", Collections.emptyList(), Collections.emptyList());
         assertThat(list101).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc");
 
-        List<String> list102 = findFiles(example1, "**/*.adoc", null, null);
+        List<String> list102 = findFiles(example1, "**/*.adoc", Collections.emptyList(), Collections.emptyList());
         assertThat(list102).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc", "pub/pub.adoc", "pub/pub1.adoc");
 
-        List<String> list103 = findFiles(example1.resolve("pages"), "*.adoc", null, null);
+        List<String> list103 = findFiles(example1.resolve("pages"), "*.adoc", Collections.emptyList(), Collections.emptyList());
         assertThat(list103).containsExactly("page1.adoc", "page2.adoc", "zpage.adoc");
 
-        List<String> list104 = findFiles(example1, "pages/page*.adoc", null, null);
+        List<String> list104 = findFiles(example1, "pages/page*.adoc", Collections.emptyList(), Collections.emptyList());
         assertThat(list104).containsExactly("pages/page1.adoc", "pages/page2.adoc");
 
-        List<String> list105 = findFiles(example1, "**/*.adoc", "pages", null);
+        List<String> list105 = findFiles(example1, "**/*.adoc", Collections.singletonList("pages"), Collections.emptyList());
         assertThat(list105).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc");
 
-        List<String> list106 = findFiles(example1, "**/*.adoc", "xxx", null);
+        List<String> list106 = findFiles(example1, "**/*.adoc", Collections.singletonList("xxx"), Collections.emptyList());
         assertThat(list106).isEmpty();
 
-        List<String> list107 = findFiles(example1.resolve("pages"), "*.adoc", "xxx", null);
+        List<String> list107 = findFiles(example1.resolve("pages"), "*.adoc", Collections.singletonList("xxx"), Collections.emptyList());
         assertThat(list107).isEmpty();
 
-        List<String> list108 = findFiles(example1.resolve("pub"), "../pages/*.adoc", null, null);
+        List<String> list108 = findFiles(example1.resolve("pub"), "../pages/*.adoc", Collections.emptyList(), Collections.emptyList());
         assertThat(list108).containsExactly("../pages/page1.adoc", "../pages/page2.adoc", "../pages/zpage.adoc");
 
-        List<String> list109 = findFiles(example1.toAbsolutePath(), "pages/*.adoc", null, null);
+        List<String> list109 = findFiles(example1.toAbsolutePath(), "pages/*.adoc", Collections.emptyList(), Collections.emptyList());
         assertThat(list109).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc");
 
         List<String> list110 = findFiles(example1.resolve("pub")
-                .toAbsolutePath(), "../pages/*.adoc", null, null);
+                .toAbsolutePath(), "../pages/*.adoc", Collections.emptyList(), Collections.emptyList());
         assertThat(list110).containsExactly("../pages/page1.adoc", "../pages/page2.adoc", "../pages/zpage.adoc");
 
         Path example4 = Paths.get("src/test/resources/example4");
 
-        List<String> list41 = findFiles(example4, "**/*.adoc", "scope1", null);
+        List<String> list41 = findFiles(example4, "**/*.adoc", Collections.singletonList("scope1"), Collections.emptyList());
         assertThat(list41).containsExactly(
                 "scope1/areaA/ipsum.adoc",
                 "scope1/areaA/lorem.adoc",
@@ -63,7 +63,7 @@ public class DynamicIncludeProcessorTest {
                 "scope1/areaB/sub1/sub1.adoc",
                 "scope1/areaB/sub2/sub2b.adoc");
 
-        List<String> list42 = findFiles(example4, "**/*.adoc", "scope1:scope2", null);
+        List<String> list42 = findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2"), Collections.emptyList());
         assertThat(list42).containsExactly(
                 "scope1/areaA/ipsum.adoc",
                 "scope1/areaA/lorem.adoc",
@@ -74,7 +74,7 @@ public class DynamicIncludeProcessorTest {
                 "scope2/areaA/lorem.adoc",
                 "scope2/areaC/areaC.adoc");
 
-        List<String> list43 = findFiles(example4, "**/*.adoc", "scope1:scope2:xxx", null);
+        List<String> list43 = findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2", "xxx"), Collections.emptyList());
         assertThat(list43).containsExactly(
                 "scope1/areaA/ipsum.adoc",
                 "scope1/areaA/lorem.adoc",
@@ -85,17 +85,17 @@ public class DynamicIncludeProcessorTest {
                 "scope2/areaA/lorem.adoc",
                 "scope2/areaC/areaC.adoc");
 
-        List<String> list44 = findFiles(example4, "**/*.adoc", "scope1:scope2", "xxx");
+        List<String> list44 = findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2"), Collections.singletonList("xxx"));
         assertThat(list44).isEmpty();
 
-        List<String> list45 = findFiles(example4, "**/*.adoc", "scope1:scope2", "areaA");
+        List<String> list45 = findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2"), Collections.singletonList("areaA"));
         assertThat(list45).containsExactly(
                 "scope1/areaA/ipsum.adoc",
                 "scope1/areaA/lorem.adoc",
                 "scope2/areaA/ipsum.adoc",
                 "scope2/areaA/lorem.adoc");
 
-        List<String> list46 = findFiles(example4, "**/*.adoc", "scope1:scope2:xxx", "areaA:areaB");
+        List<String> list46 = findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2", "xxx"), Arrays.asList("areaA", "areaB"));
         assertThat(list46).containsExactly(
                 "scope1/areaA/ipsum.adoc",
                 "scope1/areaA/lorem.adoc",
@@ -105,7 +105,7 @@ public class DynamicIncludeProcessorTest {
                 "scope2/areaA/ipsum.adoc",
                 "scope2/areaA/lorem.adoc");
 
-        List<String> list47 = findFiles(example4, "**/*.adoc", "scope1:scope2:xxx", "areaA:areaB:xxx");
+        List<String> list47 = findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2", "xxx"), Arrays.asList("areaA", "areaB", "xxx"));
         assertThat(list47).containsExactly(
                 "scope1/areaA/ipsum.adoc",
                 "scope1/areaA/lorem.adoc",
@@ -116,8 +116,8 @@ public class DynamicIncludeProcessorTest {
                 "scope2/areaA/lorem.adoc");
     }
 
-    private List<String> findFiles(Path dir, String glob, String scopesValue, String areasValue) throws IOException {
-        List<String> list = DynamicIncludeProcessor.findFiles(dir, glob, scopesValue, areasValue)
+    private List<String> findFiles(Path dir, String glob, List<String> scopes, List<String> areas) throws IOException {
+        List<String> list = DynamicIncludeProcessor.findFiles(dir, glob, scopes, areas)
                 .stream()
                 .map(p -> dir.relativize(p)
                         .toString())
@@ -267,7 +267,7 @@ public class DynamicIncludeProcessorTest {
 
     private List<String> findFilesAndSort(List<String> sortOrder) throws IOException {
         Path example4 = Paths.get("src/test/resources/example4");
-        List<Path> list = DynamicIncludeProcessor.findFiles(example4, "**/*.adoc", "scope1:scope2", "areaA:areaB");
+        List<Path> list = DynamicIncludeProcessor.findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2"), Arrays.asList("areaA", "areaB"));
         List<String> order = sortOrder.stream()
                 .map(DynamicIncludeProcessor::convertGlobToRegex)
                 .collect(Collectors.toList());
