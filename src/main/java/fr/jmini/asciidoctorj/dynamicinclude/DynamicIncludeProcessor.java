@@ -69,7 +69,9 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         String areasOrderValue = readKey(document, attributes, "areas-order", "dynamic-include-areas-order");
 
         List<String> scopes = valueToList(scopesValue);
+        List<String> scopesOrder = scopesOrderValue != null ? valueToList(scopesOrderValue) : scopes;
         List<String> areas = valueToList(areasValue);
+        List<String> areasOrder = areasOrderValue != null ? valueToList(areasOrderValue) : scopes;
         List<Path> files = findFiles(dir, glob, scopes, areas);
 
         Path root;
@@ -80,13 +82,13 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             root = dir;
         }
 
-        List<String> orderList;
+        List<String> patternOrder;
         if (order != null) {
             try {
                 Path orderFile = dir.resolve(order);
                 Path orderFileFolder = orderFile.getParent();
                 if (Files.isReadable(orderFile)) {
-                    orderList = Files.readAllLines(orderFile)
+                    patternOrder = Files.readAllLines(orderFile)
                             .stream()
                             .map(String::trim)
                             .filter(s -> !s.isEmpty())
@@ -99,15 +101,15 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                             .collect(Collectors.toList());
                 } else {
                     System.out.println("Could not find order file:" + orderFile.toAbsolutePath());
-                    orderList = Collections.emptyList();
+                    patternOrder = Collections.emptyList();
                 }
             } catch (IOException e) {
                 //TODO: do something else with the exception
                 e.printStackTrace();
-                orderList = Collections.emptyList();
+                patternOrder = Collections.emptyList();
             }
         } else {
-            orderList = Collections.emptyList();
+            patternOrder = Collections.emptyList();
         }
 
         String idprefix = document.getAttribute("idprefix", "_")
@@ -119,7 +121,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 .map(p -> createFileHolder(dir, p, idprefix, idseparator))
                 .collect(Collectors.toList());
 
-        List<FileHolder> list = sortList(contentFiles, orderList, FileHolder::getKey);
+        List<FileHolder> list = sortList(contentFiles, patternOrder, scopesOrder, areasOrder);
+        //list.forEach(h -> System.out.println("(dynamic-include) including:" + h.getKey()));
 
         for (int i = list.size() - 1; i >= 0; i--) {
             FileHolder item = list.get(i);
@@ -345,19 +348,27 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return sb.toString();
     }
 
-    public static <T> List<T> sortList(List<T> list, List<String> orderedKeyPatterns, Function<T, String> keyExtractor) {
+    public static List<FileHolder> sortList(List<FileHolder> list, List<String> patternOrder, List<String> scopesOrder, List<String> areasOrder) {
+        Comparator<FileHolder> comparator = getOrderedKeyPatternComparator(list, patternOrder, FileHolder::getKey)
+                .thenComparing(getOrderedValuesComparator(list, scopesOrder, FileHolder::getPathScope, FileHolder::getKey))
+                .thenComparing(getOrderedValuesComparator(list, areasOrder, FileHolder::getPathArea, FileHolder::getKey))
+                .thenComparing(Comparator.comparing(FileHolder::getKey));
+
+        return list.stream()
+                .sorted(comparator)
+                .collect(Collectors.toList());
+    }
+
+    public static <T> Comparator<T> getOrderedKeyPatternComparator(List<T> list, List<String> orderedKeyPatterns, Function<T, String> keyExtractor) {
         Comparator<T> comparator;
         if (orderedKeyPatterns.isEmpty()) {
             comparator = (t1, t2) -> 0;
         } else {
-            Map<String, Integer> orderMap = list.stream()
+            final Map<String, Integer> orderMap = list.stream()
                     .collect(Collectors.toMap(keyExtractor, v -> orderOrMaxValue(orderedKeyPatterns, keyExtractor.apply(v), list.size())));
-            comparator = Comparator.comparingInt((T i) -> orderMap.get(keyExtractor.apply(i)));
+            comparator = Comparator.comparingInt((final T i) -> orderMap.get(keyExtractor.apply(i)));
         }
-
-        return list.stream()
-                .sorted(comparator.thenComparing(Comparator.comparing(keyExtractor)))
-                .collect(Collectors.toList());
+        return comparator;
     }
 
     private static int orderOrMaxValue(List<String> orderedKeyPatterns, String value, int maxValue) {
@@ -372,9 +383,43 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return maxValue;
     }
 
+    public static <T> Comparator<T> getOrderedValuesComparator(List<T> list, List<String> orderedValues, Function<T, String> valueExtractor, Function<T, String> identifierExtractor) {
+        Comparator<T> comparator;
+        if (orderedValues.isEmpty()) {
+            comparator = (t1, t2) -> 0;
+        } else {
+            final Map<String, Integer> orderMap = list.stream()
+                    .collect(Collectors.toMap(identifierExtractor, v -> indexOfOrMaxValue(orderedValues, valueExtractor.apply(v), list.size())));
+            comparator = Comparator.comparingInt((final T i) -> orderMap.get(identifierExtractor.apply(i)));
+        }
+        return comparator;
+    }
+
+    private static int indexOfOrMaxValue(List<String> orderedValues, String value, int maxValue) {
+        int indexOf = orderedValues.indexOf(value);
+        return (indexOf > -1) ? indexOf : maxValue;
+    }
+
     public static FileHolder createFileHolder(Path dir, Path p, String idprefix, String idseparator) {
-        String key = dir.relativize(p)
-                .toString();
+        Path relativePath = dir.relativize(p);
+        String key = relativePath.toString();
+        Iterator<Path> iterator = relativePath.iterator();
+        String scope;
+        String area;
+        if (iterator.hasNext()) {
+            scope = iterator.next()
+                    .toString();
+            if (iterator.hasNext()) {
+                area = iterator.next()
+                        .toString();
+            } else {
+                area = null;
+            }
+        } else {
+            scope = null;
+            area = null;
+        }
+
         String content = readFile(p);
 
         TitleType titleType;
@@ -403,7 +448,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             titleEnd = 0;
         }
 
-        return new FileHolder(p, key, content, titleType, title, titleLevel, titleId, titleStart, titleEnd);
+        return new FileHolder(p, key, scope, area, content, titleType, title, titleLevel, titleId, titleStart, titleEnd);
     }
 
     public static String computeTitleId(String text, String idprefix, String idseparator) {

@@ -92,6 +92,11 @@ public class ExampleTest {
         runTest("example4", "test3");
     }
 
+    @Test
+    public void testExample4Test4() throws Exception {
+        runTest("example4", "test4");
+    }
+
     private List<LogRecord> runTest(String folder, String fileName) throws IOException, URISyntaxException {
         Path exampleFolder = Paths.get("src/test/resources/" + folder)
                 .toAbsolutePath();

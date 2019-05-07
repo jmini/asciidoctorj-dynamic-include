@@ -5,6 +5,8 @@ import java.nio.file.Path;
 public class FileHolder {
 
     private Path path;
+    private String pathScope;
+    private String pathArea;
     private String key;
     private String content;
     private TitleType titleType;
@@ -14,9 +16,11 @@ public class FileHolder {
     private int titleStart;
     private int titleEnd;
 
-    public FileHolder(Path path, String key, String content, TitleType titleType, String title, int titleLevel, String titleId, int titleStart, int titleEnd) {
+    public FileHolder(Path path, String key, String pathScope, String pathArea, String content, TitleType titleType, String title, int titleLevel, String titleId, int titleStart, int titleEnd) {
         this.path = path;
         this.key = key;
+        this.pathScope = pathScope;
+        this.pathArea = pathArea;
         this.content = content;
         this.titleType = titleType;
         this.title = title;
@@ -32,6 +36,14 @@ public class FileHolder {
 
     public String getKey() {
         return key;
+    }
+
+    public String getPathScope() {
+        return pathScope;
+    }
+
+    public String getPathArea() {
+        return pathArea;
     }
 
     public String getContent() {

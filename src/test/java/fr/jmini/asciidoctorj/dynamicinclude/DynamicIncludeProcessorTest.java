@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -178,24 +179,98 @@ public class DynamicIncludeProcessorTest {
     }
 
     @Test
-    void testSortList() throws Exception {
+    void testComparator() throws Exception {
         List<Integer> input = Arrays.asList(10, 24, 52, 3, 43, 91);
+        Function<Integer, String> keyExtractor = i -> i.toString();
 
         List<String> order1 = Collections.emptyList();
-        List<Integer> list1 = DynamicIncludeProcessor.sortList(input, order1, i -> i.toString());
+        Comparator<Integer> comparator1 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(input, order1, i -> i.toString());
+        List<Integer> list1 = sortIntegerList(input, comparator1, keyExtractor);
         assertThat(list1).containsExactly(10, 24, 3, 43, 52, 91);
 
         List<String> order2 = Arrays.asList("3", "10", "91", "52", "43", "24");
-        List<Integer> list2 = DynamicIncludeProcessor.sortList(input, order2, i -> i.toString());
+        Comparator<Integer> comparator2 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(input, order2, keyExtractor);
+        List<Integer> list2 = sortIntegerList(input, comparator2, keyExtractor);
         assertThat(list2).containsExactly(3, 10, 91, 52, 43, 24);
 
         List<String> order3 = Arrays.asList("91", "3");
-        List<Integer> list3 = DynamicIncludeProcessor.sortList(input, order3, i -> i.toString());
+        Comparator<Integer> comparator3 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(input, order3, keyExtractor);
+        List<Integer> list3 = sortIntegerList(input, comparator3, keyExtractor);
         assertThat(list3).containsExactly(91, 3, 10, 24, 43, 52);
 
         List<String> order4 = Arrays.asList("[0-9]", "[0-9]+");
-        List<Integer> list4 = DynamicIncludeProcessor.sortList(input, order4, i -> i.toString());
+        Comparator<Integer> comparator4 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(input, order4, keyExtractor);
+        List<Integer> list4 = sortIntegerList(input, comparator4, keyExtractor);
         assertThat(list4).containsExactly(3, 10, 24, 43, 52, 91);
+
+        List<String> order5 = Arrays.asList("3", "10", "91", "52", "43", "24");
+        Comparator<Integer> comparator5 = DynamicIncludeProcessor.getOrderedValuesComparator(input, order5, keyExtractor, keyExtractor);
+        List<Integer> list5 = sortIntegerList(input, comparator5, keyExtractor);
+        assertThat(list5).containsExactly(3, 10, 91, 52, 43, 24);
+
+        List<String> order6 = Arrays.asList("91", "3");
+        Comparator<Integer> comparator6 = DynamicIncludeProcessor.getOrderedValuesComparator(input, order6, keyExtractor, keyExtractor);
+        List<Integer> list6 = sortIntegerList(input, comparator6, keyExtractor);
+        assertThat(list6).containsExactly(91, 3, 10, 24, 43, 52);
+    }
+
+    private List<Integer> sortIntegerList(List<Integer> list, Comparator<Integer> comparator, Function<Integer, String> keyExtractor) {
+        return list.stream()
+                .sorted(comparator.thenComparing(Comparator.comparing(keyExtractor)))
+                .collect(Collectors.toList());
+    }
+
+    @Test
+    void testSortList() throws Exception {
+        Path dir = Paths.get("dir");
+        List<FileHolder> input = Arrays.asList(
+                createFileHolder(dir, "s1/a1/page8.adoc", "s1", "a1"),
+                createFileHolder(dir, "s2/a2/page2.adoc", "s2", "a2"),
+                createFileHolder(dir, "s1/a3/pageB.adoc", "s1", "a3"),
+                createFileHolder(dir, "s2/a1/page3.adoc", "s2", "a1"),
+                createFileHolder(dir, "s1/a2/pageA.adoc", "s1", "a2"),
+                createFileHolder(dir, "s2/a3/pageC.adoc", "s2", "a3"));
+
+        List<String> list1 = sortList(input, Collections.emptyList(), Arrays.asList("s1", "s2"), Collections.emptyList());
+        assertThat(list1).containsExactly(
+                "s1/a1/page8.adoc",
+                "s1/a2/pageA.adoc",
+                "s1/a3/pageB.adoc",
+                "s2/a1/page3.adoc",
+                "s2/a2/page2.adoc",
+                "s2/a3/pageC.adoc");
+
+        List<String> list2 = sortList(input, Collections.emptyList(), Arrays.asList("s1", "s2"), Arrays.asList("a2", "a1", "xx", "a3"));
+        assertThat(list2).containsExactly(
+                "s1/a2/pageA.adoc",
+                "s1/a1/page8.adoc",
+                "s1/a3/pageB.adoc",
+                "s2/a2/page2.adoc",
+                "s2/a1/page3.adoc",
+                "s2/a3/pageC.adoc");
+
+        List<String> list3 = sortList(input, Collections.singletonList("s[0-9]\\/a[0-9]\\/page[A-Z].adoc"), Arrays.asList("s2", "s1"), Arrays.asList("a3", "a1", "a2"));
+        assertThat(list3).containsExactly(
+                "s2/a3/pageC.adoc",
+                "s1/a3/pageB.adoc",
+                "s1/a2/pageA.adoc",
+                "s2/a1/page3.adoc",
+                "s2/a2/page2.adoc",
+                "s1/a1/page8.adoc");
+
+    }
+
+    private List<String> sortList(List<FileHolder> input, List<String> patternOrder, List<String> scopesOrder, List<String> areasOrder) {
+        List<String> list1 = DynamicIncludeProcessor.sortList(input, patternOrder, scopesOrder, areasOrder)
+                .stream()
+                .map(FileHolder::getKey)
+                .collect(Collectors.toList());
+        return list1;
+    }
+
+    private FileHolder createFileHolder(Path dir, String subPath, String scope, String area) {
+        Path page = dir.resolve(subPath);
+        return new FileHolder(page, subPath, scope, area, "!! some content !!", TitleType.ABSENT, null, 0, null, 100, 101);
     }
 
     @Test
@@ -273,8 +348,9 @@ public class DynamicIncludeProcessorTest {
                 .collect(Collectors.toList());
         Function<Path, String> toKey = p -> example4.relativize(p)
                 .toString();
-        return DynamicIncludeProcessor.sortList(list, order, toKey)
-                .stream()
+        Comparator<Path> comparator = DynamicIncludeProcessor.getOrderedKeyPatternComparator(list, order, toKey);
+        return list.stream()
+                .sorted(comparator.thenComparing(Comparator.comparing(toKey)))
                 .map(toKey)
                 .collect(Collectors.toList());
     }
@@ -284,8 +360,8 @@ public class DynamicIncludeProcessorTest {
         Path dir = Paths.get("dir");
         Path page1 = dir.resolve("folder/page.adoc");
         Path page2 = dir.resolve("folder/other.adoc");
-        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
-        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
+        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", null, null, "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
+        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", null, null, "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
         List<FileHolder> list = Arrays.asList(holder1, holder2);
 
         String emptyList = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some content", Collections.emptyList(), dir, page1, dir, true);
@@ -324,8 +400,8 @@ public class DynamicIncludeProcessorTest {
         Path dir = Paths.get("dir");
         Path page1 = dir.resolve("folder/page.adoc");
         Path page2 = dir.resolve("folder/other.adoc");
-        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
-        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
+        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", null, null, "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
+        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", null, null, "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
         List<FileHolder> list = Arrays.asList(holder1, holder2);
 
         String emptyList = DynamicIncludeProcessor.replaceXrefInlineLinks("Some content", Collections.emptyList(), dir, page1, dir, true);

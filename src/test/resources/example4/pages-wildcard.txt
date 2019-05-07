@@ -1,0 +1,4 @@
+*/areaB/main.adoc
+*/areaB/*.adoc
+*/areaA/lorem.adoc
+*/areaA/ipsum.adoc
