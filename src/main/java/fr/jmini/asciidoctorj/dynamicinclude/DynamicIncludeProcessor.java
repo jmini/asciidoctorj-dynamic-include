@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,6 +69,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         String areasValue = readKey(document, attributes, "areas", "dynamic-include-areas");
         String areasOrderValue = readKey(document, attributes, "areas-order", "dynamic-include-areas-order");
 
+        String logfile = readKey(document, attributes, "logfile", "dynamic-include-logfile");
+
         List<String> scopes = valueToList(scopesValue);
         List<String> scopesOrder = scopesOrderValue != null ? valueToList(scopesOrderValue) : scopes;
         List<String> areas = valueToList(areasValue);
@@ -123,7 +126,31 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 .collect(Collectors.toList());
 
         List<FileHolder> list = sortList(contentFiles, patternOrder, scopesOrder, areasOrder);
-        list.forEach(h -> System.out.println("(dynamic-include) including:" + h.getKey()));
+        if (logfile != null) {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("# File: ");
+            sb.append(reader.getFile());
+            sb.append("\n");
+
+            sb.append("# Target: ");
+            sb.append(target);
+            sb.append("\n");
+
+            list.forEach(h -> sb.append(h.getKey())
+                    .append("\n"));
+
+            Path path = Paths.get(logfile);
+            try {
+                if (Files.notExists(path)) {
+                    Files.createFile(path);
+                }
+                Files.write(path, sb.toString()
+                        .getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
         for (int i = list.size() - 1; i >= 0; i--) {
             FileHolder item = list.get(i);

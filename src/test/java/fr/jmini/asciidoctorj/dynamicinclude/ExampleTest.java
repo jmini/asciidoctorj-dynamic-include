@@ -22,7 +22,17 @@ public class ExampleTest {
 
     @Test
     public void testExample1Index() throws Exception {
-        runTest("example1", "index");
+        Path logfile = Files.createTempFile("test", "log")
+                .toAbsolutePath();
+
+        runTest("example1", "index", logfile.toString());
+
+        String content = readFile(logfile);
+        assertThat(content).isEqualTo("# File: \n" +
+                "# Target: dynamic:pages/*.adoc\n" +
+                "pages/page1.adoc\n" +
+                "pages/page2.adoc\n" +
+                "pages/zpage.adoc\n");
     }
 
     @Test
@@ -103,6 +113,10 @@ public class ExampleTest {
     }
 
     private List<LogRecord> runTest(String folder, String fileName) throws IOException, URISyntaxException {
+        return runTest(folder, fileName, null);
+    }
+
+    private List<LogRecord> runTest(String folder, String fileName, String logfile) throws IOException, URISyntaxException {
         Path exampleFolder = Paths.get("src/test/resources/" + folder)
                 .toAbsolutePath();
         String content = new String(Files.readAllBytes(exampleFolder.resolve(fileName + ".adoc")), StandardCharsets.UTF_8);
@@ -115,6 +129,9 @@ public class ExampleTest {
         AttributesBuilder attributesBuilder = AttributesBuilder.attributes()
                 .setAnchors(false)
                 .sectionNumbers(false);
+        if (logfile != null) {
+            attributesBuilder.attribute("dynamic-include-logfile", logfile);
+        }
 
         OptionsBuilder optionsBuilder = OptionsBuilder.options()
                 .attributes(attributesBuilder)
@@ -126,5 +143,16 @@ public class ExampleTest {
         assertThat(html).isEqualTo(expected);
 
         return logHandler.getLogs();
+    }
+
+    static String readFile(Path file) {
+        String content;
+        try {
+            content = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new IllegalStateException("Could not read file: " + file, e);
+        }
+        return content;
     }
 }

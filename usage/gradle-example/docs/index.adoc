@@ -3,6 +3,8 @@ ifndef::root[]
 :root:
 endif::[]
 
+:dynamic-include-logfile: build/dynamic-import.log
+
 == Gradle example
 
 Links:

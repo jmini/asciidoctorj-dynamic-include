@@ -5,4 +5,4 @@ endif::[]
 
 = Maven example
 
-include::dynamic:**/*.adoc[]
+include::dynamic:**/*.adoc[logfile="target/dynamic-import.log"]
