@@ -1,0 +1,56 @@
+// {root} points to the docs folder:
+ifndef::root[]
+:root: ../
+endif::[]
+
+=== Content 1
+
+Lorem ipsum.
+
+8. one
+7. two
+
+* Test <<test, Content 1 Test>>
+* Test content1 <<content1.adoc#test, Content 1 Test>>
+* Test root <<{root}pages/content1.adoc#test, Content 1 Test>>
+* Double square brackets: <<{root}pages/content2.adoc#, Content 2>>
+* Double square brackets: <<{root}pages/content2.adoc#content-2, Content 2 content 2>>
+* Double square brackets: <<{root}pages/footer.adoc#, Footer>>
+
+Lorem ipsum.
+  
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+==== Test
+
+Lorem test.
+
+Lorem test.

@@ -1,0 +1,16 @@
+// {root} points to the example root folder:
+ifndef::root[]
+:root: ../
+endif::[]
+
+=== Content
+
+Lorem ipsum 1.
+
+7. one
+2. two
+
+See <<other.adoc#, other page>>.
+
+Lorem ipsum 1.
+

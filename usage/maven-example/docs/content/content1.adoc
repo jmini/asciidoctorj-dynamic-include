@@ -1,0 +1,12 @@
+// {root} points to the docs folder:
+ifndef::root[]
+:root: ../
+endif::[]
+
+//=== Content 1
+
+Lorem ipsum.
+
+Lorem ipsum.
+
+Lorem ipsum.

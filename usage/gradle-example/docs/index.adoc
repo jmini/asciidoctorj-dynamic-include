@@ -1,0 +1,21 @@
+// {root} points to the docs folder:
+ifndef::root[]
+:root:
+endif::[]
+
+:dynamic-include-logfile: build/dynamic-import.log
+
+== Gradle example
+
+Links:
+
+* Double square brackets: <<pages/content1.adoc#, Content 1>>
+* Double square brackets: <<pages/content1.adoc#test, Content 1 Test>>
+* Double square brackets: <<pages/content2.adoc#content-2, Content 2>>
+* Double square brackets: <<pages/footer.adoc#, Footer>>
+* xref: xref:pages/content1.adoc[Content 1]
+* xref: xref:pages/content1.adoc#test[Content 1 Test]
+* xref: xref:pages/content2.adoc#content-2[Content 2]
+* xref: xref:pages/footer.adoc[Footer]
+
+include::dynamic:pages/*.adoc[]

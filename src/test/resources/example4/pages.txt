@@ -1,0 +1,27 @@
+scope1/areaA/lorem.adoc
+scope2/areaA/lorem.adoc
+scope1/areaA/ipsum.adoc
+scope2/areaA/ipsum.adoc
+scope3/areaA/ipsum.adoc
+scope1/areaB/main.adoc
+scope3/areaB/main.adoc
+scope1/areaB/sub1/sub1.adoc
+scope3/areaB/sub2/sub2a.adoc
+scope3/areaB/sub2/sub2b.adoc
+scope1/areaB/sub2/sub2b.adoc
+scope2/areaC/areaC.adoc
+scope3/areaD/areaD.adoc
+
+(dynamic-include) including:scope1/areaA/lorem.adoc
+(dynamic-include) including:scope2/areaA/lorem.adoc
+(dynamic-include) including:scope1/areaA/ipsum.adoc
+(dynamic-include) including:scope2/areaA/ipsum.adoc
+(dynamic-include) including:scope3/areaA/ipsum.adoc
+(dynamic-include) including:scope1/areaB/main.adoc
+(dynamic-include) including:scope1/areaB/sub1/sub1.adoc
+(dynamic-include) including:scope1/areaB/sub2/sub2b.adoc
+(dynamic-include) including:scope2/areaC/areaC.adoc
+(dynamic-include) including:scope3/areaB/main.adoc
+(dynamic-include) including:scope3/areaB/sub2/sub2a.adoc
+(dynamic-include) including:scope3/areaB/sub2/sub2b.adoc
+(dynamic-include) including:scope3/areaD/areaD.adoc

@@ -1,0 +1,3 @@
+=== Sub2b
+
+scope1.areaB.sub2
