@@ -38,6 +38,8 @@ import fr.jmini.utils.substringfinder.SubstringFinder;
 public class DynamicIncludeProcessor extends IncludeProcessor {
     private static final String PREFIX = "dynamic:";
 
+    private static final String STAR_REPLACEMENT = "__STAR__";
+
     private static final Pattern TITLE_REGEX = Pattern.compile("(\\/?\\/? *)(={1,5})(.+)");
 
     private static final SubstringFinder DOUBLE_ANGLED_BRACKET_FINDER = SubstringFinder.define("<<", ">>");
@@ -98,9 +100,10 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                             .filter(s -> !s.isEmpty())
                             .filter(s -> !s.startsWith("//"))
                             .filter(s -> !s.startsWith("#"))
-                            .map(s -> orderFileFolder.resolve(s))
-                            .map(p -> dir.relativize(p)
-                                    .toString())
+                            .map(s -> orderFileFolder.resolve(sanitizeStringPath(s)))
+                            .map(p -> unsanitizeStringPath(dir.relativize(p)
+                                    .toString()
+                                    .replace('\\', '/')))
                             .map(DynamicIncludeProcessor::convertGlobToRegex)
                             .collect(Collectors.toList());
                 } else {
@@ -205,10 +208,11 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
     }
 
     public static List<Path> findFiles(Path dir, Path root, String glob, List<String> scopes, List<String> areas) {
-        Path normalizedGlob = dir.resolve(glob)
+        Path normalizedGlob = dir.resolve(sanitizeStringPath(glob))
                 .normalize();
         final PathMatcher matcher = FileSystems.getDefault()
-                .getPathMatcher("glob:" + normalizedGlob);
+                .getPathMatcher("glob:" + unsanitizeStringPath(normalizedGlob.toString()
+                        .replace('\\', '/')));
 
         List<Path> result = new ArrayList<>();
         try {
@@ -263,7 +267,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         }
         for (Path path : dir) {
             if (path.toString()
-                    .contains("*")) {
+                    .contains(STAR_REPLACEMENT)) {
                 return root;
             }
             root = root.resolve(path);
@@ -430,7 +434,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
     public static FileHolder createFileHolder(Path dir, Path root, Path p, String idprefix, String idseparator) {
         String key = dir.relativize(p)
-                .toString();
+                .toString()
+                .replace('\\', '/');
         Iterator<Path> iterator = root.relativize(p)
                 .iterator();
         String scope;
@@ -614,7 +619,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                     type = XrefHolderType.TEXT;
                 }
                 newFileName = dir.relativize(file)
-                        .toString();
+                        .toString()
+                        .replace('\\', '/');
             } else {
                 newFileName = "";
             }
@@ -711,5 +717,13 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             throw new IllegalStateException("Could not read file: " + file, e);
         }
         return content;
+    }
+
+    static String sanitizeStringPath(String s) {
+        return s.replace("*", STAR_REPLACEMENT);
+    }
+
+    static String unsanitizeStringPath(String s) {
+        return s.replace(STAR_REPLACEMENT, "*");
     }
 }

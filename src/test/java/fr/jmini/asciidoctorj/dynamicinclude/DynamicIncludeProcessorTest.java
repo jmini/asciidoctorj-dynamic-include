@@ -121,7 +121,8 @@ public class DynamicIncludeProcessorTest {
         List<String> list = DynamicIncludeProcessor.findFiles(dir, dir, glob, scopes, areas)
                 .stream()
                 .map(p -> dir.relativize(p)
-                        .toString())
+                        .toString()
+                        .replace('\\', '/'))
                 .sorted()
                 .collect(Collectors.toList());
         return list;
@@ -347,7 +348,8 @@ public class DynamicIncludeProcessorTest {
                 .map(DynamicIncludeProcessor::convertGlobToRegex)
                 .collect(Collectors.toList());
         Function<Path, String> toKey = p -> example4.relativize(p)
-                .toString();
+                .toString()
+                .replace('\\', '/');
         Comparator<Path> comparator = DynamicIncludeProcessor.getOrderedKeyPatternComparator(list, order, toKey);
         return list.stream()
                 .sorted(comparator.thenComparing(Comparator.comparing(toKey)))
