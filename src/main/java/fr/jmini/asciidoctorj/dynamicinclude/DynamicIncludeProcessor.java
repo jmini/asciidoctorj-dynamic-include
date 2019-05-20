@@ -146,6 +146,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             Path path = Paths.get(logfile);
             try {
                 if (Files.notExists(path)) {
+                    Files.createDirectories(path.getParent());
                     Files.createFile(path);
                 }
                 Files.write(path, sb.toString()

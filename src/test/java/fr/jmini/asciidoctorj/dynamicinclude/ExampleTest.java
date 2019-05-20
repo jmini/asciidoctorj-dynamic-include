@@ -109,7 +109,18 @@ public class ExampleTest {
 
     @Test
     public void testExample4Pub() throws Exception {
+        Path logFile = Paths.get("build/unit-stest/example4-publish.logs");
+        if (Files.exists(logFile)) {
+            Files.delete(logFile);
+        }
         runTest("example4_publish", "pub");
+        assertThat(logFile).isRegularFile();
+        assertThat(logFile).hasContent("# File: \n"
+                + "# Target: dynamic:../example4/**/*.adoc\n"
+                + "../example4/scope3/areaD/areaD.adoc\n"
+                + "../example4/scope3/areaA/ipsum.adoc\n"
+                + "../example4/scope2/areaA/ipsum.adoc\n"
+                + "../example4/scope2/areaA/lorem.adoc\n");
     }
 
     private List<LogRecord> runTest(String folder, String fileName) throws IOException, URISyntaxException {

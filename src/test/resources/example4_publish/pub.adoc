@@ -1,4 +1,5 @@
 :root: ../example4/
+:dynamic-include-logfile: build/unit-stest/example4-publish.logs
 
 == Dynamic Include Pub
 
