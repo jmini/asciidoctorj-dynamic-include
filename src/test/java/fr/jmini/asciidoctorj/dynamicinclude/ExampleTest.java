@@ -25,7 +25,8 @@ public class ExampleTest {
         Path logfile = Files.createTempFile("test", "log")
                 .toAbsolutePath();
 
-        runTest("example1", "index", logfile.toString());
+        List<LogRecord> logs = runTest("example1", "index", logfile.toString());
+        assertThat(logs).isEmpty();
 
         String content = readFile(logfile);
         assertThat(content).isEqualTo("# File: \n" +
@@ -37,27 +38,32 @@ public class ExampleTest {
 
     @Test
     public void testExample1Index1() throws Exception {
-        runTest("example1", "index1");
+        List<LogRecord> logs = runTest("example1", "index1");
+        assertThat(logs).isEmpty();
     }
 
     @Test
     public void testExample1Index2() throws Exception {
-        runTest("example1", "index2");
+        List<LogRecord> logs = runTest("example1", "index2");
+        assertThat(logs).isEmpty();
     }
 
     @Test
     public void testExample1Index3() throws Exception {
-        runTest("example1", "index3");
+        List<LogRecord> logs = runTest("example1", "index3");
+        assertThat(logs).isEmpty();
     }
 
     @Test
     public void testExample1Pub() throws Exception {
-        runTest("example1/pub", "pub");
+        List<LogRecord> logs = runTest("example1/pub", "pub");
+        assertThat(logs).isEmpty();
     }
 
     @Test
     public void testExample1Pub1() throws Exception {
-        runTest("example1/pub", "pub1");
+        List<LogRecord> logs = runTest("example1/pub", "pub1");
+        assertThat(logs).isEmpty();
     }
 
     @Test
@@ -89,22 +95,26 @@ public class ExampleTest {
 
     @Test
     public void testExample4Test1() throws Exception {
-        runTest("example4", "test1");
+        List<LogRecord> logs = runTest("example4", "test1");
+        assertThat(logs).isEmpty();
     }
 
     @Test
     public void testExample4Test2() throws Exception {
-        runTest("example4", "test2");
+        List<LogRecord> logs = runTest("example4", "test2");
+        assertThat(logs).isEmpty();
     }
 
     @Test
     public void testExample4Test3() throws Exception {
-        runTest("example4", "test3");
+        List<LogRecord> logs = runTest("example4", "test3");
+        assertThat(logs).isEmpty();
     }
 
     @Test
     public void testExample4Test4() throws Exception {
-        runTest("example4", "test4");
+        List<LogRecord> logs = runTest("example4", "test4");
+        assertThat(logs).isEmpty();
     }
 
     @Test
@@ -113,7 +123,10 @@ public class ExampleTest {
         if (Files.exists(logFile)) {
             Files.delete(logFile);
         }
-        runTest("example4_publish", "pub");
+
+        List<LogRecord> logs = runTest("example4_publish", "pub");
+        assertThat(logs).isEmpty();
+
         assertThat(logFile).isRegularFile();
         assertThat(logFile).hasContent("# File: \n"
                 + "# Target: dynamic:../example4/**/*.adoc\n"
