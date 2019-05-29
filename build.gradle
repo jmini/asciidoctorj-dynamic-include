@@ -2,10 +2,10 @@ plugins {
     id 'java'
     id 'maven-publish'
     id 'signing'
-    id 'org.asciidoctor.convert' version '1.5.9.2'
+    id 'org.asciidoctor.convert' version '2.2.0'
     id 'org.ajoberstar.git-publish' version '2.0.0'
     id 'net.researchgate.release' version '2.6.0'
-    id "de.marcphilipp.nexus-publish" version '0.2.0'
+    id 'de.marcphilipp.nexus-publish' version '0.2.0'
 }
 
 wrapper {
@@ -168,7 +168,7 @@ asciidoctor {
         mavenCentral()
     }
     dependencies {
-        asciidoctor "fr.jmini.asciidoctorj:git-link:3.1.0"
+        asciidoctor "fr.jmini.asciidoctorj:git-link:3.2.0"
     }
 }
 
