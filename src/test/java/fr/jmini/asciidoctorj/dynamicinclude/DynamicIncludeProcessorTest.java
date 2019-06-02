@@ -185,24 +185,36 @@ public class DynamicIncludeProcessorTest {
         Function<Integer, String> keyExtractor = i -> i.toString();
 
         List<String> order1 = Collections.emptyList();
-        Comparator<Integer> comparator1 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(input, order1, i -> i.toString());
+        MessageCollector collector1 = new MessageCollector();
+        Comparator<Integer> comparator1 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(collector1, input, order1, i -> i.toString());
         List<Integer> list1 = sortIntegerList(input, comparator1, keyExtractor);
         assertThat(list1).containsExactly(10, 24, 3, 43, 52, 91);
+        assertThat(collector1.getMessages()).isEmpty();
 
         List<String> order2 = Arrays.asList("3", "10", "91", "52", "43", "24");
-        Comparator<Integer> comparator2 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(input, order2, keyExtractor);
+        MessageCollector collector2 = new MessageCollector();
+        Comparator<Integer> comparator2 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(collector2, input, order2, keyExtractor);
         List<Integer> list2 = sortIntegerList(input, comparator2, keyExtractor);
         assertThat(list2).containsExactly(3, 10, 91, 52, 43, 24);
+        assertThat(collector2.getMessages()).isEmpty();
 
         List<String> order3 = Arrays.asList("91", "3");
-        Comparator<Integer> comparator3 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(input, order3, keyExtractor);
+        MessageCollector collector3 = new MessageCollector();
+        Comparator<Integer> comparator3 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(collector3, input, order3, keyExtractor);
         List<Integer> list3 = sortIntegerList(input, comparator3, keyExtractor);
         assertThat(list3).containsExactly(91, 3, 10, 24, 43, 52);
+        assertThat(collector3.getMessages()).containsExactly(
+                "Did not find any information order for '10', putting it at the end of the document",
+                "Did not find any information order for '24', putting it at the end of the document",
+                "Did not find any information order for '52', putting it at the end of the document",
+                "Did not find any information order for '43', putting it at the end of the document");
 
         List<String> order4 = Arrays.asList("[0-9]", "[0-9]+");
-        Comparator<Integer> comparator4 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(input, order4, keyExtractor);
+        MessageCollector collector4 = new MessageCollector();
+        Comparator<Integer> comparator4 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(collector4, input, order4, keyExtractor);
         List<Integer> list4 = sortIntegerList(input, comparator4, keyExtractor);
         assertThat(list4).containsExactly(3, 10, 24, 43, 52, 91);
+        assertThat(collector4.getMessages()).isEmpty();
 
         List<String> order5 = Arrays.asList("3", "10", "91", "52", "43", "24");
         Comparator<Integer> comparator5 = DynamicIncludeProcessor.getOrderedValuesComparator(input, order5, keyExtractor, keyExtractor);
@@ -232,7 +244,8 @@ public class DynamicIncludeProcessorTest {
                 createFileHolder(dir, "s1/a2/pageA.adoc", "s1", "a2"),
                 createFileHolder(dir, "s2/a3/pageC.adoc", "s2", "a3"));
 
-        List<String> list1 = sortList(input, Collections.emptyList(), Arrays.asList("s1", "s2"), Collections.emptyList());
+        MessageCollector collector1 = new MessageCollector();
+        List<String> list1 = sortList(input, collector1, Collections.emptyList(), Arrays.asList("s1", "s2"), Collections.emptyList());
         assertThat(list1).containsExactly(
                 "s1/a1/page8.adoc",
                 "s1/a2/pageA.adoc",
@@ -240,8 +253,10 @@ public class DynamicIncludeProcessorTest {
                 "s2/a1/page3.adoc",
                 "s2/a2/page2.adoc",
                 "s2/a3/pageC.adoc");
+        assertThat(collector1.getMessages()).isEmpty();
 
-        List<String> list2 = sortList(input, Collections.emptyList(), Arrays.asList("s1", "s2"), Arrays.asList("a2", "a1", "xx", "a3"));
+        MessageCollector collector2 = new MessageCollector();
+        List<String> list2 = sortList(input, collector2, Collections.emptyList(), Arrays.asList("s1", "s2"), Arrays.asList("a2", "a1", "xx", "a3"));
         assertThat(list2).containsExactly(
                 "s1/a2/pageA.adoc",
                 "s1/a1/page8.adoc",
@@ -249,8 +264,10 @@ public class DynamicIncludeProcessorTest {
                 "s2/a2/page2.adoc",
                 "s2/a1/page3.adoc",
                 "s2/a3/pageC.adoc");
+        assertThat(collector2.getMessages()).isEmpty();
 
-        List<String> list3 = sortList(input, Collections.singletonList("s[0-9]\\/a[0-9]\\/page[A-Z].adoc"), Arrays.asList("s2", "s1"), Arrays.asList("a3", "a1", "a2"));
+        MessageCollector collector3 = new MessageCollector();
+        List<String> list3 = sortList(input, collector3, Collections.singletonList("s[0-9]\\/a[0-9]\\/page[A-Z].adoc"), Arrays.asList("s2", "s1"), Arrays.asList("a3", "a1", "a2"));
         assertThat(list3).containsExactly(
                 "s2/a3/pageC.adoc",
                 "s1/a3/pageB.adoc",
@@ -258,11 +275,14 @@ public class DynamicIncludeProcessorTest {
                 "s2/a1/page3.adoc",
                 "s2/a2/page2.adoc",
                 "s1/a1/page8.adoc");
-
+        assertThat(collector3.getMessages()).containsExactly(
+                "Did not find any information order for 's1/a1/page8.adoc', putting it at the end of the document",
+                "Did not find any information order for 's2/a2/page2.adoc', putting it at the end of the document",
+                "Did not find any information order for 's2/a1/page3.adoc', putting it at the end of the document");
     }
 
-    private List<String> sortList(List<FileHolder> input, List<String> patternOrder, List<String> scopesOrder, List<String> areasOrder) {
-        List<String> list1 = DynamicIncludeProcessor.sortList(input, patternOrder, scopesOrder, areasOrder)
+    private List<String> sortList(List<FileHolder> input, MessageCollector collector, List<String> patternOrder, List<String> scopesOrder, List<String> areasOrder) {
+        List<String> list1 = DynamicIncludeProcessor.sortList(collector, input, patternOrder, scopesOrder, areasOrder)
                 .stream()
                 .map(FileHolder::getKey)
                 .collect(Collectors.toList());
@@ -276,7 +296,8 @@ public class DynamicIncludeProcessorTest {
 
     @Test
     void testfindFilesAndSort() throws Exception {
-        List<String> list1 = findFilesAndSort(Collections.emptyList());
+        MessageCollector collector1 = new MessageCollector();
+        List<String> list1 = findFilesAndSort(collector1, Collections.emptyList());
         assertThat(list1).containsExactly(
                 "scope1/areaA/ipsum.adoc",
                 "scope1/areaA/lorem.adoc",
@@ -285,8 +306,10 @@ public class DynamicIncludeProcessorTest {
                 "scope1/areaB/sub2/sub2b.adoc",
                 "scope2/areaA/ipsum.adoc",
                 "scope2/areaA/lorem.adoc");
+        assertThat(collector1.getMessages()).isEmpty();
 
-        List<String> list2 = findFilesAndSort(Arrays.asList(
+        MessageCollector collector2 = new MessageCollector();
+        List<String> list2 = findFilesAndSort(collector2, Arrays.asList(
                 "scope1/areaA/ipsum.adoc",
                 "scope2/areaA/ipsum.adoc",
                 "scope1/areaA/lorem.adoc",
@@ -302,8 +325,10 @@ public class DynamicIncludeProcessorTest {
                 "scope1/areaB/sub2/sub2b.adoc",
                 "scope1/areaB/sub1/sub1.adoc",
                 "scope1/areaB/main.adoc");
+        assertThat(collector2.getMessages()).isEmpty();
 
-        List<String> list3 = findFilesAndSort(Arrays.asList(
+        MessageCollector collector3 = new MessageCollector();
+        List<String> list3 = findFilesAndSort(collector3, Arrays.asList(
                 "scope2/*/*.adoc",
                 "scope1/*/*/*.adoc",
                 "scope1/*/*.adoc"));
@@ -315,8 +340,10 @@ public class DynamicIncludeProcessorTest {
                 "scope1/areaA/ipsum.adoc",
                 "scope1/areaA/lorem.adoc",
                 "scope1/areaB/main.adoc");
+        assertThat(collector3.getMessages()).isEmpty();
 
-        List<String> list4 = findFilesAndSort(Arrays.asList(
+        MessageCollector collector4 = new MessageCollector();
+        List<String> list4 = findFilesAndSort(collector4, Arrays.asList(
                 "scope2/*",
                 "scope1/*"));
         assertThat(list4).containsExactly(
@@ -327,8 +354,10 @@ public class DynamicIncludeProcessorTest {
                 "scope1/areaB/main.adoc",
                 "scope1/areaB/sub1/sub1.adoc",
                 "scope1/areaB/sub2/sub2b.adoc");
+        assertThat(collector4.getMessages()).isEmpty();
 
-        List<String> list5 = findFilesAndSort(Arrays.asList(
+        MessageCollector collector5 = new MessageCollector();
+        List<String> list5 = findFilesAndSort(collector5, Arrays.asList(
                 "*/areaB/*",
                 "*/areaA/*"));
         assertThat(list5).containsExactly(
@@ -339,9 +368,11 @@ public class DynamicIncludeProcessorTest {
                 "scope1/areaA/lorem.adoc",
                 "scope2/areaA/ipsum.adoc",
                 "scope2/areaA/lorem.adoc");
+        assertThat(collector5.getMessages()).isEmpty();
+
     }
 
-    private List<String> findFilesAndSort(List<String> sortOrder) throws IOException {
+    private List<String> findFilesAndSort(MessageCollector collector, List<String> sortOrder) throws IOException {
         Path example4 = Paths.get("src/test/resources/example4");
         List<Path> list = DynamicIncludeProcessor.findFiles(example4, example4, "**/*.adoc", Arrays.asList("scope1", "scope2"), Arrays.asList("areaA", "areaB"));
         List<String> order = sortOrder.stream()
@@ -350,7 +381,7 @@ public class DynamicIncludeProcessorTest {
         Function<Path, String> toKey = p -> example4.relativize(p)
                 .toString()
                 .replace('\\', '/');
-        Comparator<Path> comparator = DynamicIncludeProcessor.getOrderedKeyPatternComparator(list, order, toKey);
+        Comparator<Path> comparator = DynamicIncludeProcessor.getOrderedKeyPatternComparator(collector, list, order, toKey);
         return list.stream()
                 .sorted(comparator.thenComparing(Comparator.comparing(toKey)))
                 .map(toKey)

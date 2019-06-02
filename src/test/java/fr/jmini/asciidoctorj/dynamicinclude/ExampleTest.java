@@ -16,6 +16,7 @@ import org.asciidoctor.AttributesBuilder;
 import org.asciidoctor.OptionsBuilder;
 import org.asciidoctor.SafeMode;
 import org.asciidoctor.log.LogRecord;
+import org.asciidoctor.log.Severity;
 import org.junit.jupiter.api.Test;
 
 public class ExampleTest {
@@ -45,7 +46,10 @@ public class ExampleTest {
     @Test
     public void testExample1Index2() throws Exception {
         List<LogRecord> logs = runTest("example1", "index2");
-        assertThat(logs).isEmpty();
+        assertThat(logs).hasSize(1);
+        LogRecord log = logs.get(0);
+        assertThat(log.getSeverity()).isEqualTo(Severity.WARN);
+        assertThat(log.getMessage()).isEqualTo("Did not find any information order for 'pages/page1.adoc', putting it at the end of the document");
     }
 
     @Test
@@ -114,7 +118,13 @@ public class ExampleTest {
     @Test
     public void testExample4Test4() throws Exception {
         List<LogRecord> logs = runTest("example4", "test4");
-        assertThat(logs).isEmpty();
+        assertThat(logs).hasSize(2);
+        LogRecord log1 = logs.get(0);
+        assertThat(log1.getSeverity()).isEqualTo(Severity.WARN);
+        assertThat(log1.getMessage()).isEqualTo("Did not find any information order for 'scope2/areaC/areaC.adoc', putting it at the end of the document");
+        LogRecord log2 = logs.get(1);
+        assertThat(log2.getSeverity()).isEqualTo(Severity.WARN);
+        assertThat(log2.getMessage()).isEqualTo("Did not find any information order for 'scope3/areaD/areaD.adoc', putting it at the end of the document");
     }
 
     @Test

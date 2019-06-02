@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,6 +31,8 @@ import java.util.stream.Collectors;
 import org.asciidoctor.ast.Document;
 import org.asciidoctor.extension.IncludeProcessor;
 import org.asciidoctor.extension.PreprocessorReader;
+import org.asciidoctor.log.LogRecord;
+import org.asciidoctor.log.Severity;
 
 import fr.jmini.asciidoctorj.dynamicinclude.XrefHolder.XrefHolderType;
 import fr.jmini.utils.substringfinder.Range;
@@ -60,6 +63,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
     @Override
     public void process(Document document, PreprocessorReader reader, String target, Map<String, Object> attributes) {
+        Consumer<String> logger = (String message) -> log(new LogRecord(Severity.WARN, message));
         Path dir = Paths.get(reader.getDir());
         String glob = target.substring(PREFIX.length());
 
@@ -107,7 +111,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                             .map(DynamicIncludeProcessor::convertGlobToRegex)
                             .collect(Collectors.toList());
                 } else {
-                    System.out.println("Could not find order file:" + orderFile.toAbsolutePath());
+                    logger.accept("Could not find order file:" + orderFile.toAbsolutePath());
                     patternOrder = Collections.emptyList();
                 }
             } catch (IOException e) {
@@ -128,7 +132,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 .map(p -> createFileHolder(dir, root, p, idprefix, idseparator))
                 .collect(Collectors.toList());
 
-        List<FileHolder> list = sortList(contentFiles, patternOrder, scopesOrder, areasOrder);
+        List<FileHolder> list = sortList(logger, contentFiles, patternOrder, scopesOrder, areasOrder);
         if (logfile != null) {
             StringBuilder sb = new StringBuilder();
 
@@ -381,8 +385,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return sb.toString();
     }
 
-    public static List<FileHolder> sortList(List<FileHolder> list, List<String> patternOrder, List<String> scopesOrder, List<String> areasOrder) {
-        Comparator<FileHolder> comparator = getOrderedKeyPatternComparator(list, patternOrder, FileHolder::getKey)
+    public static List<FileHolder> sortList(Consumer<String> logger, List<FileHolder> list, List<String> patternOrder, List<String> scopesOrder, List<String> areasOrder) {
+        Comparator<FileHolder> comparator = getOrderedKeyPatternComparator(logger, list, patternOrder, FileHolder::getKey)
                 .thenComparing(getOrderedValuesComparator(list, scopesOrder, FileHolder::getPathScope, FileHolder::getKey))
                 .thenComparing(getOrderedValuesComparator(list, areasOrder, FileHolder::getPathArea, FileHolder::getKey))
                 .thenComparing(Comparator.comparing(FileHolder::getKey));
@@ -392,19 +396,19 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 .collect(Collectors.toList());
     }
 
-    public static <T> Comparator<T> getOrderedKeyPatternComparator(List<T> list, List<String> orderedKeyPatterns, Function<T, String> keyExtractor) {
+    public static <T> Comparator<T> getOrderedKeyPatternComparator(Consumer<String> logger, List<T> list, List<String> orderedKeyPatterns, Function<T, String> keyExtractor) {
         Comparator<T> comparator;
         if (orderedKeyPatterns.isEmpty()) {
             comparator = (t1, t2) -> 0;
         } else {
             final Map<String, Integer> orderMap = list.stream()
-                    .collect(Collectors.toMap(keyExtractor, v -> orderOrMaxValue(orderedKeyPatterns, keyExtractor.apply(v), list.size())));
+                    .collect(Collectors.toMap(keyExtractor, v -> orderOrMaxValue(logger, orderedKeyPatterns, keyExtractor.apply(v), list.size())));
             comparator = Comparator.comparingInt((final T i) -> orderMap.get(keyExtractor.apply(i)));
         }
         return comparator;
     }
 
-    private static int orderOrMaxValue(List<String> orderedKeyPatterns, String value, int maxValue) {
+    private static int orderOrMaxValue(Consumer<String> logger, List<String> orderedKeyPatterns, String value, int maxValue) {
         for (int i = 0; i < orderedKeyPatterns.size(); i++) {
             String p = orderedKeyPatterns.get(i);
             if (value.matches(p)) {
@@ -412,7 +416,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             }
         }
 
-        System.out.println("Did not find any information order for '" + value + "', putting it at the end of the document");
+        logger.accept("Did not find any information order for '" + value + "', putting it at the end of the document");
         return maxValue;
     }
 
