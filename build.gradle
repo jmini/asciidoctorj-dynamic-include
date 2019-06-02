@@ -168,7 +168,7 @@ asciidoctor {
         mavenCentral()
     }
     dependencies {
-        asciidoctor "fr.jmini.asciidoctorj:git-link:3.2.0"
+        asciidoctor "fr.jmini.asciidoctorj:git-link:3.2.1"
     }
 }
 
