@@ -4,5 +4,8 @@ ifndef::root[]
 endif::[]
 
 = Maven example
+:dynamic-include-display-view-source: true
+:dynamic-include-view-source-link-text: view source on GitHub
+:dynamic-include-view-source-link-pattern: https://github.com/jmini/asciidoctorj-dynamic-include/blob/master/{file-relative-to-git-repository}
 
 include::dynamic:**/*.adoc[]
