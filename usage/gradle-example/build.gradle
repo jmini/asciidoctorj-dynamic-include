@@ -20,18 +20,22 @@ asciidoctor {
         include 'index.adoc'
     }     
     outputDir = file('build/generated-docs')
-    attributes = ['project-version'      : "$version",
-                  'attribute-missing'    : 'warn',
-                  'toc'                  : 'left',
-                  'icons'                : 'font',
-                  'sectanchors'          : 'true',
-                  'idprefix'             : '',
-                  'idseparator'          : '-']
+    attributes = ['project-version'                          : "$version",
+                  'dynamic-include-display-view-source'      : 'true',
+                  'dynamic-include-view-source-link-text'    : 'edit in vscode',
+                  'dynamic-include-view-source-link-pattern' : 'vscode://file{file-absolute-with-leading-slash}',
+                  'attribute-missing'                        : 'warn',
+                  'toc'                                      : 'left',
+                  'icons'                                    : 'font',
+                  'sectanchors'                              : 'true',
+                  'idprefix'                                 : '',
+                  'idseparator'                              : '-']
     repositories {
+        mavenLocal()
         mavenCentral()
     }
     dependencies {
-        asciidoctor 'fr.jmini.asciidoctorj:dynamic-include:1.1.0' // <1>
+        asciidoctor 'fr.jmini.asciidoctorj:dynamic-include:1.2.0-SNAPSHOT' // <1>
     }
 }
 // end::task[]

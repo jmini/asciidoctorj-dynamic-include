@@ -24,7 +24,7 @@
           <dependency> <!--1-->
             <groupId>fr.jmini.asciidoctorj</groupId>
             <artifactId>dynamic-include</artifactId>
-            <version>1.1.0</version>
+            <version>1.2.0-SNAPSHOT</version>
           </dependency>
           <!-- ... (other dependencies) -->
 <!-- end::mvn-plugin[] -->
@@ -51,6 +51,7 @@
           <!-- ... (other configuration) -->
           <attributes>
             <dynamic-include-logfile>${project.build.directory}/dynamic-import.log</dynamic-include-logfile>
+            <local-git-repository-path>${project.basedir}/../../</local-git-repository-path>
 <!-- end::mvn-plugin[] -->
             <revdate>${build.date}</revdate>
             <project-version>${project.version}</project-version>
