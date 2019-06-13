@@ -442,8 +442,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h1>AsciidoctorJ dynamic-include</h1>
 <div class="details">
 <span id="author" class="author">Jeremie Bresson</span><br>
-<span id="revnumber">version 1.1.0,</span>
-<span id="revdate">2019-06-02</span>
+<span id="revnumber">version 1.2.0,</span>
+<span id="revdate">2019-06-13</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
@@ -584,7 +584,7 @@ Your <code>&lt;build&gt;</code> section could looks like this:</p>
         <span class="tag">&lt;dependency&gt;</span> <i class="conum" data-value="1"></i><b>(1)</b>
           <span class="tag">&lt;groupId&gt;</span>fr.jmini.asciidoctorj<span class="tag">&lt;/groupId&gt;</span>
           <span class="tag">&lt;artifactId&gt;</span>dynamic-include<span class="tag">&lt;/artifactId&gt;</span>
-          <span class="tag">&lt;version&gt;</span>1.1.0<span class="tag">&lt;/version&gt;</span>
+          <span class="tag">&lt;version&gt;</span>1.2.0<span class="tag">&lt;/version&gt;</span>
         <span class="tag">&lt;/dependency&gt;</span>
         <span class="comment">&lt;!-- ... (other dependencies) --&gt;</span>
       <span class="tag">&lt;/dependencies&gt;</span>
@@ -592,6 +592,7 @@ Your <code>&lt;build&gt;</code> section could looks like this:</p>
         <span class="comment">&lt;!-- ... (other configuration) --&gt;</span>
         <span class="tag">&lt;attributes&gt;</span>
           <span class="tag">&lt;dynamic-include-logfile&gt;</span>${project.build.directory}/dynamic-import.log<span class="tag">&lt;/dynamic-include-logfile&gt;</span>
+          <span class="tag">&lt;local-git-repository-path&gt;</span>${project.basedir}/../../<span class="tag">&lt;/local-git-repository-path&gt;</span>
           <span class="comment">&lt;!-- ... (other attributes) --&gt;</span>
         <span class="tag">&lt;/attributes&gt;</span>
       <span class="tag">&lt;/configuration&gt;</span>
@@ -628,18 +629,21 @@ Your <code>&lt;build&gt;</code> section could looks like this:</p>
         include 'index.adoc'
     }
     outputDir = file('build/generated-docs')
-    attributes = ['project-version'      : &quot;$version&quot;,
-                  'attribute-missing'    : 'warn',
-                  'toc'                  : 'left',
-                  'icons'                : 'font',
-                  'sectanchors'          : 'true',
-                  'idprefix'             : '',
-                  'idseparator'          : '-']
+    attributes = ['project-version'                          : &quot;$version&quot;,
+                  'dynamic-include-display-view-source'      : 'true',
+                  'dynamic-include-view-source-link-text'    : 'edit in vscode',
+                  'dynamic-include-view-source-link-pattern' : 'vscode://file{file-absolute-with-leading-slash}',
+                  'attribute-missing'                        : 'warn',
+                  'toc'                                      : 'left',
+                  'icons'                                    : 'font',
+                  'sectanchors'                              : 'true',
+                  'idprefix'                                 : '',
+                  'idseparator'                              : '-']
     repositories {
         mavenCentral()
     }
     dependencies {
-        asciidoctor 'fr.jmini.asciidoctorj:dynamic-include:1.1.0' <i class="conum" data-value="1"></i><b>(1)</b>
+        asciidoctor 'fr.jmini.asciidoctorj:dynamic-include:1.2.0' <i class="conum" data-value="1"></i><b>(1)</b>
     }
 }</code></pre>
 </div>
@@ -776,8 +780,8 @@ ssh-add ~/.ssh/id_rsa</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Version 1.1.0<br>
-Last updated 2019-05-29 22:42:39 +0200
+Version 1.2.0<br>
+Last updated 2019-06-07 07:12:16 +0200
 </div>
 </div>
 <style>
