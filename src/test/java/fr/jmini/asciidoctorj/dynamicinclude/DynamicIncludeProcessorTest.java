@@ -3,6 +3,7 @@ package fr.jmini.asciidoctorj.dynamicinclude;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -743,5 +744,42 @@ public class DynamicIncludeProcessorTest {
     void testCountLines() throws Exception {
         assertThat(DynamicIncludeProcessor.countLines("one\ntwo")).isEqualTo(2);
         assertThat(DynamicIncludeProcessor.countLines("one")).isEqualTo(1);
+    }
+
+    @Test
+    void testReplacePlaceholders() throws Exception {
+        Path file = Paths.get("/some/path/file.txt");
+        Path file2 = Paths.get(URI.create("file:///C:/some/path/file.txt"));
+        Function<String, Optional<String>> attributeGetter = (String s) -> {
+            switch (s) {
+            case "foo":
+                return Optional.of("bar");
+            case "local-git-repository-path":
+                return Optional.of("/some/path/here/../");
+            case "gradle-projectdir":
+                return Optional.of("/some/test/../path/");
+            case "gradle-rootdir":
+                return Optional.of("/some/");
+            }
+            return Optional.empty();
+        };
+
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("xxx", file, attributeGetter)).isEqualTo("xxx");
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("{foo}", file, attributeGetter)).isEqualTo("bar");
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("xxx{foo}", file, attributeGetter)).isEqualTo("xxxbar");
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("{foo}xxx", file, attributeGetter)).isEqualTo("barxxx");
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("xxx{foo}xxx", file, attributeGetter)).isEqualTo("xxxbarxxx");
+
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("{baz}", file, attributeGetter)).isEqualTo("{baz}");
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("xxx{baz}", file, attributeGetter)).isEqualTo("xxx{baz}");
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("{baz}xxx", file, attributeGetter)).isEqualTo("{baz}xxx");
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("xxx{baz}xxx", file, attributeGetter)).isEqualTo("xxx{baz}xxx");
+
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("vscode://file{file-absolute-with-leading-slash}", file, attributeGetter)).isEqualTo("vscode://file/some/path/file.txt");
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("vscode://file{file-absolute-with-leading-slash}", file2, attributeGetter)).isEqualTo("vscode://file/C:/some/path/file.txt");
+
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("https://example.com/{file-relative-to-git-repository}", file, attributeGetter)).isEqualTo("https://example.com/file.txt");
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("https://example.com/{file-relative-to-gradle-projectdir}", file, attributeGetter)).isEqualTo("https://example.com/file.txt");
+        assertThat(DynamicIncludeProcessor.replacePlaceholders("https://example.com/{file-relative-to-gradle-rootdir}", file, attributeGetter)).isEqualTo("https://example.com/path/file.txt");
     }
 }

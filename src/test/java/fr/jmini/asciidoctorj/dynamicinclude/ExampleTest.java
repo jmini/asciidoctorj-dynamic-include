@@ -59,6 +59,12 @@ public class ExampleTest {
     }
 
     @Test
+    public void testExample1Index4() throws Exception {
+        List<LogRecord> logs = runTest("example1", "index4");
+        assertThat(logs).isEmpty();
+    }
+
+    @Test
     public void testExample1Pub() throws Exception {
         List<LogRecord> logs = runTest("example1/pub", "pub");
         assertThat(logs).isEmpty();
@@ -166,6 +172,9 @@ public class ExampleTest {
         if (logfile != null) {
             attributesBuilder.attribute("dynamic-include-logfile", logfile);
         }
+        attributesBuilder.attribute("local-git-repository-path", Paths.get("")
+                .toAbsolutePath()
+                .toString());
 
         OptionsBuilder optionsBuilder = OptionsBuilder.options()
                 .attributes(attributesBuilder)

@@ -47,6 +47,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
     private static final SubstringFinder DOUBLE_ANGLED_BRACKET_FINDER = SubstringFinder.define("<<", ">>");
     private static final SubstringFinder SINGLE_BRACKET_FINDER = SubstringFinder.define("[", "]");
+    private static final SubstringFinder SINGLE_CURLY_BRACKET_FINDER = SubstringFinder.define("{", "}");
 
     public DynamicIncludeProcessor() {
         super();
@@ -68,7 +69,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         String glob = target.substring(PREFIX.length());
 
         String order = readKey(document, attributes, "order", "dynamic-include-order");
-        boolean externalXrefAsText = readKey(document, attributes, "external-xref-as-text", "dynamic-include-external-xref-as-text") != null;
+        boolean externalXrefAsText = hasKey(document, attributes, "external-xref-as-text", "dynamic-include-external-xref-as-text");
 
         String scopesValue = readKey(document, attributes, "scopes", "dynamic-include-scopes");
         String scopesOrderValue = readKey(document, attributes, "scopes-order", "dynamic-include-scopes-order");
@@ -76,6 +77,13 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         String areasOrderValue = readKey(document, attributes, "areas-order", "dynamic-include-areas-order");
 
         String logfile = readKey(document, attributes, "logfile", "dynamic-include-logfile");
+
+        boolean displayViewSourceLink = hasKey(document, attributes, "display-view-source", "dynamic-include-display-view-source");
+        String viewSourceLinkPattern = readKey(document, attributes, "view-source-link-pattern", "dynamic-include-view-source-link-pattern");
+        String viewSourceLinkText = readKey(document, attributes, "view-source-link-text", "dynamic-include-view-source-link-text");
+        if (viewSourceLinkText == null) {
+            viewSourceLinkText = "view source";
+        }
 
         List<String> scopes = valueToList(scopesValue);
         List<String> scopesOrder = scopesOrderValue != null ? valueToList(scopesOrderValue) : scopes;
@@ -179,18 +187,28 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                     .substring(0, splitIndex);
             int lineNumber = countLines(header);
 
-            String prefix;
-            if (previousTitleEquals) {
-                prefix = "";
-            } else if (item.getTitleType() == TitleType.PRESENT) {
-                prefix = "\n";
-                lineNumber = lineNumber - 1;
-            } else {
-                prefix = "[#" + item.getTitleId() + "]\n";
-                lineNumber = lineNumber - 1;
+            StringBuilder prefixSb = new StringBuilder();
+
+            if (displayViewSourceLink) {
+                String viewSourceUrl = replacePlaceholders(viewSourceLinkPattern, path, (String k) -> getDocumentAttribute(document, k));
+
+                lineNumber = lineNumber - 3;
+                prefixSb.append("\n");
+                prefixSb.append("[.dynamic-include-view-source]\n");
+                prefixSb.append("[ link:" + viewSourceUrl + "[" + viewSourceLinkText + "] ]\n");
             }
 
-            String content = prefix + item.getContent()
+            if (!previousTitleEquals) {
+                if (item.getTitleType() == TitleType.PRESENT) {
+                    prefixSb.append("\n");
+                    lineNumber = lineNumber - 1;
+                } else {
+                    prefixSb.append("[#" + item.getTitleId() + "]\n");
+                    lineNumber = lineNumber - 1;
+                }
+            }
+
+            String content = prefixSb.toString() + item.getContent()
                     .substring(splitIndex);
             content = replaceXrefDoubleAngledBracketLinks(content, list, dir, path, root, externalXrefAsText);
             content = replaceXrefInlineLinks(content, list, dir, path, root, externalXrefAsText);
@@ -204,19 +222,34 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             return attributes.get(includeKey)
                     .toString();
         } else {
-            if (document.hasAttribute(documentKey)) {
-                return document.getAttribute(documentKey)
-                        .toString();
+            Optional<String> documentAttribute = getDocumentAttribute(document, documentKey);
+            if (documentAttribute.isPresent()) {
+                return documentAttribute.get();
             }
         }
         return null;
+    }
+
+    private Optional<String> getDocumentAttribute(Document document, String key) {
+        if (document.hasAttribute(key)) {
+            return Optional.ofNullable(document.getAttribute(key)
+                    .toString());
+        }
+        return Optional.empty();
+    }
+
+    private boolean hasKey(Document document, Map<String, Object> attributes, String includeKey, String documentKey) {
+        if (attributes.containsKey(includeKey)) {
+            return true;
+        }
+        return document.hasAttribute(documentKey);
     }
 
     public static List<Path> findFiles(Path dir, Path root, String glob, List<String> scopes, List<String> areas) {
         Path normalizedGlob = dir.resolve(sanitizeStringPath(glob))
                 .normalize();
         final PathMatcher matcher = FileSystems.getDefault()
-                .getPathMatcher("glob:" + unsanitizeStringPath(normalizedGlob.toString()
+                .getPathMatcher("glob:" + unsanitizeStringPath(normalizePath(normalizedGlob)
                         .replace('\\', '/')));
 
         List<Path> result = new ArrayList<>();
@@ -711,6 +744,74 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             counter++;
         }
         return counter;
+    }
+
+    public static String replacePlaceholders(String viewSourceLinkPattern, Path file, Function<String, Optional<String>> attributeGetter) {
+        StringBuilder sb = new StringBuilder();
+
+        int startAt = 0;
+        while (startAt < viewSourceLinkPattern.length()) {
+            Optional<Range> find = SINGLE_CURLY_BRACKET_FINDER.nextRange(viewSourceLinkPattern, startAt);
+            if (find.isPresent()) {
+                Range range = find.get();
+                sb.append(viewSourceLinkPattern.substring(startAt, range.getRangeStart()));
+                String placeholderName = viewSourceLinkPattern.substring(range.getContentStart(), range.getContentEnd());
+                String placeholderLowerCase = placeholderName.toLowerCase();
+                switch (placeholderLowerCase) {
+                case "file-relative-to-git-repository":
+                    Optional<String> localGitRepositoryPath = attributeGetter.apply("local-git-repository-path");
+                    appendPlaceholderValue(sb, placeholderName, localGitRepositoryPath, (folderPath) -> computeRelativePath(file, folderPath));
+                    break;
+                case "file-relative-to-gradle-projectdir":
+                    Optional<String> gradleProjectdir = attributeGetter.apply("gradle-projectdir");
+                    appendPlaceholderValue(sb, placeholderName, gradleProjectdir, (folderPath) -> computeRelativePath(file, folderPath));
+                    break;
+                case "file-relative-to-gradle-rootdir":
+                    Optional<String> gradleRootdir = attributeGetter.apply("gradle-rootdir");
+                    appendPlaceholderValue(sb, placeholderName, gradleRootdir, (folderPath) -> computeRelativePath(file, folderPath));
+                    break;
+                case "file-absolute-with-leading-slash":
+                    String absolutePath = normalizePath(file.toAbsolutePath());
+                    if (!absolutePath.startsWith("/")) {
+                        sb.append("/");
+                    }
+                    sb.append(absolutePath);
+                    break;
+                default:
+                    Optional<String> attribute = attributeGetter.apply(placeholderLowerCase);
+                    appendPlaceholderValue(sb, placeholderName, attribute, Function.identity());
+                    break;
+                }
+                startAt = range.getRangeEnd();
+            } else {
+                sb.append(viewSourceLinkPattern.substring(startAt));
+                startAt = viewSourceLinkPattern.length();
+            }
+        }
+        return sb.toString();
+    }
+
+    private static String computeRelativePath(Path file, String folderPath) {
+        Path folder = Paths.get(folderPath)
+                .normalize();
+        Path relativize = folder.relativize(file);
+        return normalizePath(relativize);
+    }
+
+    private static String normalizePath(Path relativize) {
+        return relativize
+                .toString()
+                .replace("\\", "/");
+    }
+
+    private static void appendPlaceholderValue(StringBuilder sb, String placeholderName, Optional<String> attribute, Function<String, String> converter) {
+        if (attribute.isPresent()) {
+            sb.append(converter.apply(attribute.get()));
+        } else {
+            sb.append("{");
+            sb.append(placeholderName);
+            sb.append("}");
+        }
     }
 
     static String readFile(Path file) {
