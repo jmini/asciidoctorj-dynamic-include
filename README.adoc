@@ -21,6 +21,8 @@ Jeremie Bresson
 AsciidoctorJ macro to include dynamically other AsciiDoc files.
 //end::header[]
 
+image:https://circleci.com/gh/{gh-repo-owner}/{gh-repo-name}.svg?style=svg["CircleCI", link="https://circleci.com/gh/{gh-repo-owner}/{gh-repo-name}"]
+
 == Project Homepage
 
 Visit the link:{homepage}[project home page] to know more about:
