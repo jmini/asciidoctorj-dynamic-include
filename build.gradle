@@ -6,6 +6,7 @@ plugins {
     id 'org.ajoberstar.git-publish' version '2.0.0'
     id 'net.researchgate.release' version '2.6.0'
     id 'de.marcphilipp.nexus-publish' version '0.3.0'
+    id 'io.codearte.nexus-staging' version '0.21.0'
 }
 
 wrapper {
@@ -98,6 +99,12 @@ nexusPublishing {
             password = project.findProperty('sonatypePassword') ?: ''
         }
     }
+}
+
+nexusStaging {
+    packageGroup = 'fr.jmini'
+    username = project.findProperty('sonatypeUser') ?: ''
+    password = project.findProperty('sonatypePassword') ?: ''
 }
 
 def buildDate() {
