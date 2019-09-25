@@ -85,7 +85,7 @@ The output of this command is an HTML page located at `<git repo root>/build/doc
 Command to build and publish the result to maven central:
 
 ----
-./gradlew publishToNexus
+./gradlew publishToSonatype
 ----
 
 Command to upload the documentation page on GitHub pages:
