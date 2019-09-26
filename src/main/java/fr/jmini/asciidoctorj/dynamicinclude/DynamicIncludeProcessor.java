@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -58,13 +59,10 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         Path dir = Paths.get(reader.getDir());
         String glob = target.substring(PREFIX.length());
 
-        String order = readKey(document, attributes, "order", "dynamic-include-order");
-        boolean externalXrefAsText = hasKey(document, attributes, "external-xref-as-text", "dynamic-include-external-xref-as-text");
+        String suffixesText = readKey(document, attributes, "suffixes", "dynamic-include-suffixes");
+        List<String> suffixes = valueToList(suffixesText);
 
-        String scopesValue = readKey(document, attributes, "scopes", "dynamic-include-scopes");
-        String scopesOrderValue = readKey(document, attributes, "scopes-order", "dynamic-include-scopes-order");
-        String areasValue = readKey(document, attributes, "areas", "dynamic-include-areas");
-        String areasOrderValue = readKey(document, attributes, "areas-order", "dynamic-include-areas-order");
+        boolean externalXrefAsText = hasKey(document, attributes, "external-xref-as-text", "dynamic-include-external-xref-as-text");
 
         String logfile = readKey(document, attributes, "logfile", "dynamic-include-logfile");
 
@@ -83,15 +81,15 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         } else {
             root = dir;
         }
-        List<Path> files = PathUtil.findFiles(dir, glob, Collections.emptyList());
-        List<Path> sortedFiles = PathUtil.sortFiles(logger, files);
+        List<Path> files = PathUtil.findFiles(dir, glob, suffixes);
+        List<Path> sortedFiles = PathUtil.sortFiles(logger, files, suffixes);
 
         String idprefix = document.getAttribute("idprefix", "_")
                 .toString();
         String idseparator = document.getAttribute("idseparator", "_")
                 .toString();
         List<FileHolder> list = sortedFiles.stream()
-                .map(p -> createFileHolder(dir, root, p, idprefix, idseparator))
+                .map(p -> createFileHolder(root, p, idprefix, idseparator))
                 .collect(Collectors.toList());
 
         if (logfile != null) {
@@ -183,6 +181,13 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return null;
     }
 
+    private static List<String> valueToList(String string) {
+        if (string != null) {
+            return Arrays.asList(string.split(":"));
+        }
+        return Collections.emptyList();
+    }
+
     private Optional<String> getDocumentAttribute(Document document, String key) {
         if (document.hasAttribute(key)) {
             return Optional.ofNullable(document.getAttribute(key)
@@ -198,8 +203,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return document.hasAttribute(documentKey);
     }
 
-    public static FileHolder createFileHolder(Path dir, Path root, Path p, String idprefix, String idseparator) {
-        String key = dir.relativize(p)
+    public static FileHolder createFileHolder(Path root, Path p, String idprefix, String idseparator) {
+        String key = root.relativize(p)
                 .toString()
                 .replace('\\', '/');
 

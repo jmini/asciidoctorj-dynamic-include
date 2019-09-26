@@ -49,51 +49,93 @@ public class PathUtilTest {
 
     @Test
     void testCompare() throws Exception {
+        Function<Path, List<String>> orderSupplier = p -> null;
+        List<String> nameSuffixes = Collections.emptyList();
+
         List<String> list1 = Arrays.asList(
                 "/folder/file.adoc",
                 "/folder/xxx/file2.adoc",
                 "/folder/xxx/page1.adoc");
-        runCompare(p -> null, list1, list1, Collections.emptyList());
+        runCompare(orderSupplier, nameSuffixes, list1, list1, Collections.emptyList());
 
         List<String> list2 = Arrays.asList(
                 "/folder/xxx/page1.adoc",
                 "/folder/xxx/file2.adoc",
                 "/folder/file.adoc");
-        runCompare(p -> null, list2, list1, Collections.emptyList());
+        runCompare(orderSupplier, nameSuffixes, list2, list1, Collections.emptyList());
 
         List<String> list3 = Arrays.asList(
                 "/folder/file.adoc",
                 "/folder/xxx/index.adoc",
                 "/folder/xxx/alpha.adoc");
-        runCompare(p -> null, list3, list3, Collections.emptyList());
+        runCompare(orderSupplier, nameSuffixes, list3, list3, Collections.emptyList());
 
         List<String> list4 = Arrays.asList(
                 "/folder/file.adoc",
                 "/folder/file.internal.adoc",
                 "/folder/file.private.adoc");
-        runCompare(p -> null, list4, list4, Collections.emptyList());
+        runCompare(orderSupplier, nameSuffixes, list4, list4, Collections.emptyList());
 
         List<String> list5 = Arrays.asList(
                 "/folder/file.private.adoc",
                 "/folder/file.adoc",
                 "/folder/file.internal.adoc");
-        runCompare(p -> null, list5, list4, Collections.emptyList());
+        runCompare(orderSupplier, nameSuffixes, list5, list4, Collections.emptyList());
 
         List<String> list6 = Arrays.asList(
                 "/folder/index.adoc",
                 "/folder/content1.adoc",
                 "/folder/content2.adoc");
-        runCompare(p -> null, list6, list6, Collections.emptyList());
+        runCompare(orderSupplier, nameSuffixes, list6, list6, Collections.emptyList());
 
         List<String> list7 = Arrays.asList(
                 "/folder/content2.adoc",
                 "/folder/content1.adoc",
                 "/folder/index.adoc");
-        runCompare(p -> null, list7, list6, Collections.emptyList());
+        runCompare(orderSupplier, nameSuffixes, list7, list6, Collections.emptyList());
+    }
+
+    @Test
+    void testCompareWithSuffix() throws Exception {
+        Function<Path, List<String>> orderSupplier = p -> null;
+        List<String> nameSuffixes = Arrays.asList("lorem", "ipsum", "dolor");
+
+        List<String> list1 = Arrays.asList(
+                "/folder/file.adoc",
+                "/folder/file.lorem.adoc",
+                "/folder/file.ipsum.adoc",
+                "/folder/file.dolor.adoc");
+        runCompare(orderSupplier, nameSuffixes, list1, list1, Collections.emptyList());
+
+        List<String> list2 = Arrays.asList(
+                "/folder/file.ipsum.adoc",
+                "/folder/file.lorem.adoc",
+                "/folder/file.adoc",
+                "/folder/file.dolor.adoc");
+        runCompare(orderSupplier, nameSuffixes, list2, list1, Collections.emptyList());
+
+        List<String> list3 = Arrays.asList(
+                "/folder/index.adoc",
+                "/folder/index.ipsum.adoc",
+                "/folder/file.adoc",
+                "/folder/file.lorem.adoc",
+                "/folder/file.ipsum.adoc");
+        runCompare(orderSupplier, nameSuffixes, list3, list3, Collections.emptyList());
+
+        List<String> list4 = Arrays.asList(
+                "/folder/file.adoc",
+                "/folder/file.lorem.adoc",
+                "/folder/file.ipsum.adoc",
+                "/folder/index.adoc",
+                "/folder/index.ipsum.adoc");
+        runCompare(orderSupplier, nameSuffixes, list4, list3, Collections.emptyList());
     }
 
     @Test
     void testCompareWithOrder() throws Exception {
+        Function<Path, List<String>> orderSupplier = p -> Arrays.asList("lorem", "ipsum", "dolor");
+        List<String> nameSuffixes = Collections.emptyList();
+
         List<String> expectedMessages = Arrays.asList(
                 "No ordering indication for 'test' in '/folder', putting it at the end",
                 "No ordering indication for 'file' in '/folder', putting it at the end");
@@ -102,21 +144,21 @@ public class PathUtilTest {
                 "/folder/test/lorem.adoc",
                 "/folder/test/ipsum.adoc",
                 "/folder/test/dolor.adoc");
-        runCompare(p -> Arrays.asList("lorem", "ipsum", "dolor"), list1, list1, expectedMessages);
+        runCompare(orderSupplier, nameSuffixes, list1, list1, expectedMessages);
 
         List<String> list2 = Arrays.asList(
                 "/folder/test/ipsum.adoc",
                 "/folder/test/lorem.adoc",
                 "/folder/file.adoc",
                 "/folder/test/dolor.adoc");
-        runCompare(p -> Arrays.asList("lorem", "ipsum", "dolor"), list2, list1, expectedMessages);
+        runCompare(orderSupplier, nameSuffixes, list2, list1, expectedMessages);
 
         List<String> list3 = Arrays.asList(
                 "/folder/file.adoc",
                 "/folder/test/index.adoc",
                 "/folder/test/lorem.adoc",
                 "/folder/test/dolor.adoc");
-        runCompare(p -> Arrays.asList("lorem", "ipsum", "dolor"), list3, list3, expectedMessages);
+        runCompare(orderSupplier, nameSuffixes, list3, list3, expectedMessages);
 
         List<String> list4 = Arrays.asList(
                 "/folder/index.adoc",
@@ -126,7 +168,7 @@ public class PathUtilTest {
                 "/folder/lorem.internal.adoc",
                 "/folder/lorem.private.adoc",
                 "/folder/ipsum.adoc");
-        runCompare(p -> Arrays.asList("lorem", "ipsum", "dolor"), list4, list4, expectedMessages);
+        runCompare(orderSupplier, nameSuffixes, list4, list4, expectedMessages);
 
         List<String> list5 = Arrays.asList(
                 "/folder/index.internal.adoc",
@@ -136,11 +178,65 @@ public class PathUtilTest {
                 "/folder/lorem.adoc",
                 "/folder/index.private.adoc",
                 "/folder/lorem.private.adoc");
-        runCompare(p -> Arrays.asList("lorem", "ipsum", "dolor"), list5, list4, expectedMessages);
+        runCompare(orderSupplier, nameSuffixes, list5, list4, expectedMessages);
     }
 
-    private void runCompare(Function<Path, List<String>> orderSupplier, List<String> list, List<String> expected, List<String> expectedMessages) {
-        AbsolutePathComparator comparator = new AbsolutePathComparator(orderSupplier);
+    @Test
+    void testCompareWithOrderAndSuffix() throws Exception {
+        Function<Path, List<String>> orderSupplier = p -> Arrays.asList("lorem", "ipsum", "dolor");
+        List<String> nameSuffixes = Arrays.asList("private", "internal");
+        List<String> expectedMessages = Collections.emptyList();
+
+        List<String> list1 = Arrays.asList(
+                "/folder/lorem.adoc",
+                "/folder/lorem.private.adoc",
+                "/folder/lorem.internal.adoc",
+                "/folder/ipsum.adoc",
+                "/folder/ipsum.internal.adoc",
+                "/folder/dolor.adoc",
+                "/folder/dolor.private.adoc");
+        runCompare(orderSupplier, nameSuffixes, list1, list1, expectedMessages);
+
+        List<String> list2 = Arrays.asList(
+                "/folder/dolor.adoc",
+                "/folder/lorem.internal.adoc",
+                "/folder/ipsum.internal.adoc",
+                "/folder/ipsum.adoc",
+                "/folder/lorem.private.adoc",
+                "/folder/dolor.private.adoc",
+                "/folder/lorem.adoc");
+        runCompare(orderSupplier, nameSuffixes, list2, list1, expectedMessages);
+
+        List<String> list3 = Arrays.asList(
+                "/folder/index.adoc",
+                "/folder/index.private.adoc",
+                "/folder/index.internal.adoc",
+                "/folder/lorem.adoc",
+                "/folder/lorem.private.adoc",
+                "/folder/lorem.internal.adoc",
+                "/folder/ipsum.adoc");
+        runCompare(orderSupplier, nameSuffixes, list3, list3, expectedMessages);
+
+        List<String> list4 = Arrays.asList(
+                "/folder/index.internal.adoc",
+                "/folder/lorem.internal.adoc",
+                "/folder/index.adoc",
+                "/folder/ipsum.adoc",
+                "/folder/lorem.adoc",
+                "/folder/index.private.adoc",
+                "/folder/lorem.private.adoc");
+        runCompare(orderSupplier, nameSuffixes, list4, list3, expectedMessages);
+    }
+
+    /**
+     * @param orderSupplier
+     * @param nameSuffixes
+     * @param list1
+     * @param list12
+     * @param emptyList
+     */
+    private void runCompare(Function<Path, List<String>> orderSupplier, List<String> nameSuffixes, List<String> list, List<String> expected, List<String> expectedMessages) {
+        AbsolutePathComparator comparator = new AbsolutePathComparator(orderSupplier, nameSuffixes);
         List<String> result = list.stream()
                 .map(Paths::get)
                 .sorted(comparator)
@@ -183,7 +279,7 @@ public class PathUtilTest {
     private List<String> findAndSortFiles(Path dir, String glob, List<String> nameSuffixes) throws IOException {
         List<String> messages = new ArrayList<>();
         List<Path> findFiles = PathUtil.findFiles(dir, glob, nameSuffixes);
-        List<Path> sortedFiles = PathUtil.sortFiles(messages::add, findFiles);
+        List<Path> sortedFiles = PathUtil.sortFiles(messages::add, findFiles, nameSuffixes);
         List<String> list = sortedFiles
                 .stream()
                 .map(p -> dir.relativize(p)

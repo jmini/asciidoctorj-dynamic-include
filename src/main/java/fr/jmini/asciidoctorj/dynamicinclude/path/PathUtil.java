@@ -72,8 +72,8 @@ public class PathUtil {
         return Collections.unmodifiableList(result);
     }
 
-    public static List<Path> sortFiles(Consumer<String> logger, List<Path> list) {
-        AbsolutePathComparator comparator = new AbsolutePathComparator(PathUtil::loadPageOrder);
+    public static List<Path> sortFiles(Consumer<String> logger, List<Path> list, List<String> suffixes) {
+        AbsolutePathComparator comparator = new AbsolutePathComparator(PathUtil::loadPageOrder, suffixes);
         List<Path> result = list.stream()
                 .sorted(comparator)
                 .collect(Collectors.toList());

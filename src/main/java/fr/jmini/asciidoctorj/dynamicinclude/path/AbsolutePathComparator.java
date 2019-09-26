@@ -15,9 +15,11 @@ public class AbsolutePathComparator implements Comparator<Path> {
     private Map<Path, List<String>> orderMap = new HashMap<>();
     private Function<Path, List<String>> orderSupplier;
     private Set<String> messages = new HashSet<>();
+    private List<String> suffixes;
 
-    public AbsolutePathComparator(Function<Path, List<String>> orderSupplier) {
+    public AbsolutePathComparator(Function<Path, List<String>> orderSupplier, List<String> suffixes) {
         this.orderSupplier = orderSupplier;
+        this.suffixes = suffixes;
     }
 
     @Override
@@ -40,7 +42,7 @@ public class AbsolutePathComparator implements Comparator<Path> {
             if (!order.contains("index")) {
                 if ("index".equals(nameWithoutSuffix1)) {
                     if ("index".equals(nameWithoutSuffix2)) {
-                        return name1.compareTo(name2);
+                        return compareNames(name1, name2);
                     }
                     return -1;
                 } else if ("index".equals(nameWithoutSuffix2)) {
@@ -51,7 +53,7 @@ public class AbsolutePathComparator implements Comparator<Path> {
                 if (order.contains(nameWithoutSuffix2)) {
                     int result = order.indexOf(nameWithoutSuffix1) - order.indexOf(nameWithoutSuffix2);
                     if (result == 0) {
-                        return name1.compareTo(name2);
+                        return compareNames(name1, name2);
                     }
                     return result;
                 } else {
@@ -66,11 +68,29 @@ public class AbsolutePathComparator implements Comparator<Path> {
             }
         }
         if ("index".equals(nameWithoutSuffix1)) {
+            if ("index".equals(nameWithoutSuffix2)) {
+                return compareNames(name1, name2);
+            }
             return -1;
         } else if ("index".equals(nameWithoutSuffix2)) {
             return 1;
         }
-        return name1.compareTo(name2);
+        return compareNames(name1, name2);
+    }
+
+    private int compareNames(String name1, String name2) {
+        String suffix1 = PathUtil.getNameSuffix(name1);
+        String suffix2 = PathUtil.getNameSuffix(name2);
+        if (suffixes.isEmpty() || Objects.equals(suffix1, suffix2)) {
+            return name1.compareTo(name2);
+        }
+        if (suffix1 == null) {
+            return -1;
+        }
+        if (suffix2 == null) {
+            return 1;
+        }
+        return suffixes.indexOf(suffix1) - suffixes.indexOf(suffix2);
     }
 
     public Set<String> getMessages() {
