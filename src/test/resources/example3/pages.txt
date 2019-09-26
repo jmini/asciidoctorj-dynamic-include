@@ -1,2 +1,0 @@
-cnt/content1.adoc
-cnt/content2.adoc

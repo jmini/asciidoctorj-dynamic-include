@@ -3,20 +3,11 @@ package fr.jmini.asciidoctorj.dynamicinclude;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,13 +26,12 @@ import org.asciidoctor.log.LogRecord;
 import org.asciidoctor.log.Severity;
 
 import fr.jmini.asciidoctorj.dynamicinclude.XrefHolder.XrefHolderType;
+import fr.jmini.asciidoctorj.dynamicinclude.path.PathUtil;
 import fr.jmini.utils.substringfinder.Range;
 import fr.jmini.utils.substringfinder.SubstringFinder;
 
 public class DynamicIncludeProcessor extends IncludeProcessor {
     private static final String PREFIX = "dynamic:";
-
-    private static final String STAR_REPLACEMENT = "__STAR__";
 
     private static final Pattern TITLE_REGEX = Pattern.compile("(\\/?\\/? *)(={1,5})(.+)");
 
@@ -85,11 +75,6 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             viewSourceLinkText = "view source";
         }
 
-        List<String> scopes = valueToList(scopesValue);
-        List<String> scopesOrder = scopesOrderValue != null ? valueToList(scopesOrderValue) : scopes;
-        List<String> areas = valueToList(areasValue);
-        List<String> areasOrder = areasOrderValue != null ? valueToList(areasOrderValue) : areas;
-
         Path root;
         if (document.hasAttribute("root")) {
             root = dir.resolve(document.getAttribute("root")
@@ -98,49 +83,17 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         } else {
             root = dir;
         }
-        List<Path> files = findFiles(dir, root, glob, scopes, areas);
-
-        List<String> patternOrder;
-        if (order != null) {
-            try {
-                Path orderFile = dir.resolve(order);
-                Path orderFileFolder = orderFile.getParent();
-                if (Files.isReadable(orderFile)) {
-                    patternOrder = Files.readAllLines(orderFile)
-                            .stream()
-                            .map(String::trim)
-                            .filter(s -> !s.isEmpty())
-                            .filter(s -> !s.startsWith("//"))
-                            .filter(s -> !s.startsWith("#"))
-                            .map(s -> orderFileFolder.resolve(sanitizeStringPath(s)))
-                            .map(p -> unsanitizeStringPath(dir.relativize(p)
-                                    .toString()
-                                    .replace('\\', '/')))
-                            .map(DynamicIncludeProcessor::convertGlobToRegex)
-                            .collect(Collectors.toList());
-                } else {
-                    logger.accept("Could not find order file:" + orderFile.toAbsolutePath());
-                    patternOrder = Collections.emptyList();
-                }
-            } catch (IOException e) {
-                //TODO: do something else with the exception
-                e.printStackTrace();
-                patternOrder = Collections.emptyList();
-            }
-        } else {
-            patternOrder = Collections.emptyList();
-        }
+        List<Path> files = PathUtil.findFiles(dir, glob, Collections.emptyList());
+        List<Path> sortedFiles = PathUtil.sortFiles(logger, files);
 
         String idprefix = document.getAttribute("idprefix", "_")
                 .toString();
         String idseparator = document.getAttribute("idseparator", "_")
                 .toString();
-
-        List<FileHolder> contentFiles = files.stream()
+        List<FileHolder> list = sortedFiles.stream()
                 .map(p -> createFileHolder(dir, root, p, idprefix, idseparator))
                 .collect(Collectors.toList());
 
-        List<FileHolder> list = sortList(logger, contentFiles, patternOrder, scopesOrder, areasOrder);
         if (logfile != null) {
             StringBuilder sb = new StringBuilder();
 
@@ -245,252 +198,15 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return document.hasAttribute(documentKey);
     }
 
-    public static List<Path> findFiles(Path dir, Path root, String glob, List<String> scopes, List<String> areas) {
-        Path normalizedGlob = dir.resolve(sanitizeStringPath(glob))
-                .normalize();
-        final PathMatcher matcher = FileSystems.getDefault()
-                .getPathMatcher("glob:" + unsanitizeStringPath(normalizePath(normalizedGlob)
-                        .replace('\\', '/')));
-
-        List<Path> result = new ArrayList<>();
-        try {
-            Path walkRoot = findWalkRoot(normalizedGlob);
-            Files.walkFileTree(walkRoot, new SimpleFileVisitor<Path>() {
-                @Override
-                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    if (matcher.matches(file)) {
-                        if (!scopes.isEmpty() || !areas.isEmpty()) {
-                            Path path = root.relativize(file);
-                            Iterator<Path> iterator = path.iterator();
-                            if (!scopes.isEmpty() && iterator.hasNext()) {
-                                String scope = iterator.next()
-                                        .toString();
-                                if (scopes.contains(scope)) {
-                                    if (areas.isEmpty()) {
-                                        result.add(file);
-                                    } else if (!scopes.isEmpty() && iterator.hasNext()) {
-                                        String area = iterator.next()
-                                                .toString();
-                                        if (areas.contains(area)) {
-                                            result.add(file);
-                                        }
-                                    }
-                                }
-                            }
-                        } else {
-                            result.add(file);
-                        }
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-        } catch (IOException e) {
-            //TODO: do something else with the exception
-            e.printStackTrace();
-        }
-        return Collections.unmodifiableList(result);
-    }
-
-    private static Path findWalkRoot(Path dir) {
-        Path root;
-        if (dir.isAbsolute()) {
-            root = dir.getRoot();
-        } else {
-            root = Paths.get("");
-        }
-        for (Path path : dir) {
-            if (path.toString()
-                    .contains(STAR_REPLACEMENT)) {
-                return root;
-            }
-            root = root.resolve(path);
-        }
-        return root;
-    }
-
-    private static List<String> valueToList(String topicsValue) {
-        if (topicsValue != null) {
-            return Arrays.asList(topicsValue.split(":"));
-        }
-        return Collections.emptyList();
-    }
-
-    /**
-     * Converts a standard POSIX Shell globbing pattern into a regular expression pattern. The result can be used with the standard {@link java.util.regex} API to recognize strings which match the glob pattern.
-     * <p>
-     * See also, the POSIX Shell language: http://pubs.opengroup.org/onlinepubs/009695399/utilities/xcu_chap02.html#tag_02_13_01
-     *
-     * @param pattern
-     *            A glob pattern.
-     * @return A regex pattern to recognize the given glob pattern.
-     */
-    public static final String convertGlobToRegex(String pattern) {
-        StringBuilder sb = new StringBuilder(pattern.length());
-        int inGroup = 0;
-        int inClass = 0;
-        int firstIndexInClass = -1;
-        char[] arr = pattern.toCharArray();
-        for (int i = 0; i < arr.length; i++) {
-            char ch = arr[i];
-            switch (ch) {
-            case '\\':
-                if (++i >= arr.length) {
-                    sb.append('\\');
-                } else {
-                    char next = arr[i];
-                    switch (next) {
-                    case ',':
-                        // escape not needed
-                        break;
-                    case 'Q':
-                    case 'E':
-                        // extra escape needed
-                        sb.append('\\');
-                    default:
-                        sb.append('\\');
-                    }
-                    sb.append(next);
-                }
-                break;
-            case '*':
-                if (inClass == 0)
-                    sb.append(".*");
-                else
-                    sb.append('*');
-                break;
-            case '?':
-                if (inClass == 0)
-                    sb.append('.');
-                else
-                    sb.append('?');
-                break;
-            case '[':
-                inClass++;
-                firstIndexInClass = i + 1;
-                sb.append('[');
-                break;
-            case ']':
-                inClass--;
-                sb.append(']');
-                break;
-            case '.':
-            case '(':
-            case ')':
-            case '+':
-            case '|':
-            case '^':
-            case '$':
-            case '@':
-            case '%':
-                if (inClass == 0 || (firstIndexInClass == i && ch == '^'))
-                    sb.append('\\');
-                sb.append(ch);
-                break;
-            case '!':
-                if (firstIndexInClass == i)
-                    sb.append('^');
-                else
-                    sb.append('!');
-                break;
-            case '{':
-                inGroup++;
-                sb.append('(');
-                break;
-            case '}':
-                inGroup--;
-                sb.append(')');
-                break;
-            case ',':
-                if (inGroup > 0)
-                    sb.append('|');
-                else
-                    sb.append(',');
-                break;
-            default:
-                sb.append(ch);
-            }
-        }
-        return sb.toString();
-    }
-
-    public static List<FileHolder> sortList(Consumer<String> logger, List<FileHolder> list, List<String> patternOrder, List<String> scopesOrder, List<String> areasOrder) {
-        Comparator<FileHolder> comparator = getOrderedKeyPatternComparator(logger, list, patternOrder, FileHolder::getKey)
-                .thenComparing(getOrderedValuesComparator(list, scopesOrder, FileHolder::getPathScope, FileHolder::getKey))
-                .thenComparing(getOrderedValuesComparator(list, areasOrder, FileHolder::getPathArea, FileHolder::getKey))
-                .thenComparing(Comparator.comparing(FileHolder::getKey));
-
-        return list.stream()
-                .sorted(comparator)
-                .collect(Collectors.toList());
-    }
-
-    public static <T> Comparator<T> getOrderedKeyPatternComparator(Consumer<String> logger, List<T> list, List<String> orderedKeyPatterns, Function<T, String> keyExtractor) {
-        Comparator<T> comparator;
-        if (orderedKeyPatterns.isEmpty()) {
-            comparator = (t1, t2) -> 0;
-        } else {
-            final Map<String, Integer> orderMap = list.stream()
-                    .collect(Collectors.toMap(keyExtractor, v -> orderOrMaxValue(logger, orderedKeyPatterns, keyExtractor.apply(v), list.size())));
-            comparator = Comparator.comparingInt((final T i) -> orderMap.get(keyExtractor.apply(i)));
-        }
-        return comparator;
-    }
-
-    private static int orderOrMaxValue(Consumer<String> logger, List<String> orderedKeyPatterns, String value, int maxValue) {
-        for (int i = 0; i < orderedKeyPatterns.size(); i++) {
-            String p = orderedKeyPatterns.get(i);
-            if (value.matches(p)) {
-                return i;
-            }
-        }
-
-        logger.accept("Did not find any information order for '" + value + "', putting it at the end of the document");
-        return maxValue;
-    }
-
-    public static <T> Comparator<T> getOrderedValuesComparator(List<T> list, List<String> orderedValues, Function<T, String> valueExtractor, Function<T, String> identifierExtractor) {
-        Comparator<T> comparator;
-        if (orderedValues.isEmpty()) {
-            comparator = (t1, t2) -> 0;
-        } else {
-            final Map<String, Integer> orderMap = list.stream()
-                    .collect(Collectors.toMap(identifierExtractor, v -> indexOfOrMaxValue(orderedValues, valueExtractor.apply(v), list.size())));
-            comparator = Comparator.comparingInt((final T i) -> orderMap.get(identifierExtractor.apply(i)));
-        }
-        return comparator;
-    }
-
-    private static int indexOfOrMaxValue(List<String> orderedValues, String value, int maxValue) {
-        int indexOf = orderedValues.indexOf(value);
-        return (indexOf > -1) ? indexOf : maxValue;
-    }
-
     public static FileHolder createFileHolder(Path dir, Path root, Path p, String idprefix, String idseparator) {
         String key = dir.relativize(p)
                 .toString()
                 .replace('\\', '/');
-        Iterator<Path> iterator = root.relativize(p)
-                .iterator();
-        String scope;
-        String area;
-        if (iterator.hasNext()) {
-            scope = iterator.next()
-                    .toString();
-            if (iterator.hasNext()) {
-                area = iterator.next()
-                        .toString();
-            } else {
-                area = null;
-            }
-        } else {
-            scope = null;
-            area = null;
-        }
+
+        String fileName = p.toFile()
+                .getName();
+
+        String nameSuffix = PathUtil.getNameSuffix(fileName);
 
         String content = readFile(p);
 
@@ -520,7 +236,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             titleEnd = 0;
         }
 
-        return new FileHolder(p, key, scope, area, content, titleType, title, titleLevel, titleId, titleStart, titleEnd);
+        return new FileHolder(p, key, nameSuffix, content, titleType, title, titleLevel, titleId, titleStart, titleEnd);
     }
 
     public static String computeTitleId(String text, String idprefix, String idseparator) {
@@ -760,18 +476,18 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 switch (placeholderLowerCase) {
                 case "file-relative-to-git-repository":
                     Optional<String> localGitRepositoryPath = attributeGetter.apply("local-git-repository-path");
-                    appendPlaceholderValue(sb, placeholderName, localGitRepositoryPath, (folderPath) -> computeRelativePath(file, folderPath));
+                    appendPlaceholderValue(sb, placeholderName, localGitRepositoryPath, (folderPath) -> PathUtil.computeRelativePath(file, folderPath));
                     break;
                 case "file-relative-to-gradle-projectdir":
                     Optional<String> gradleProjectdir = attributeGetter.apply("gradle-projectdir");
-                    appendPlaceholderValue(sb, placeholderName, gradleProjectdir, (folderPath) -> computeRelativePath(file, folderPath));
+                    appendPlaceholderValue(sb, placeholderName, gradleProjectdir, (folderPath) -> PathUtil.computeRelativePath(file, folderPath));
                     break;
                 case "file-relative-to-gradle-rootdir":
                     Optional<String> gradleRootdir = attributeGetter.apply("gradle-rootdir");
-                    appendPlaceholderValue(sb, placeholderName, gradleRootdir, (folderPath) -> computeRelativePath(file, folderPath));
+                    appendPlaceholderValue(sb, placeholderName, gradleRootdir, (folderPath) -> PathUtil.computeRelativePath(file, folderPath));
                     break;
                 case "file-absolute-with-leading-slash":
-                    String absolutePath = normalizePath(file.toAbsolutePath());
+                    String absolutePath = PathUtil.normalizePath(file.toAbsolutePath());
                     if (!absolutePath.startsWith("/")) {
                         sb.append("/");
                     }
@@ -789,19 +505,6 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             }
         }
         return sb.toString();
-    }
-
-    private static String computeRelativePath(Path file, String folderPath) {
-        Path folder = Paths.get(folderPath)
-                .normalize();
-        Path relativize = folder.relativize(file);
-        return normalizePath(relativize);
-    }
-
-    private static String normalizePath(Path relativize) {
-        return relativize
-                .toString()
-                .replace("\\", "/");
     }
 
     private static void appendPlaceholderValue(StringBuilder sb, String placeholderName, Optional<String> attribute, Function<String, String> converter) {
@@ -823,13 +526,5 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             throw new IllegalStateException("Could not read file: " + file, e);
         }
         return content;
-    }
-
-    static String sanitizeStringPath(String s) {
-        return s.replace("*", STAR_REPLACEMENT);
-    }
-
-    static String unsanitizeStringPath(String s) {
-        return s.replace(STAR_REPLACEMENT, "*");
     }
 }

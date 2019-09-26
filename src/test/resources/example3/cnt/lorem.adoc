@@ -3,7 +3,7 @@ ifndef::root[]
 :root: ../
 endif::[]
 
-=== Content
+=== Lorem
 
 Lorem ipsum 1.
 

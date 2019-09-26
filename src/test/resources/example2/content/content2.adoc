@@ -3,7 +3,7 @@ ifndef::root[]
 :root: ../
 endif::[]
 
-=== Content 2
+== Content 2
 
 Lorem dolor.
 
