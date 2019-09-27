@@ -71,10 +71,10 @@ public class ExampleTest {
         String content = readFile(logfile);
         assertThat(content).isEqualTo("# File: \n" +
                 "# Target: dynamic:../pages/*.adoc\n" +
-                "# level-offset-shifting: 1\n" +
-                "pages/index.adoc (leveloffset: 0)\n" +
-                "pages/page1.adoc (leveloffset: +1)\n" +
-                "pages/page2.adoc (leveloffset: +1)\n\n");
+                "# level-offset-shifting: 0\n" +
+                "../pages/index.adoc (leveloffset: 0)\n" +
+                "../pages/page1.adoc (leveloffset: +1)\n" +
+                "../pages/page2.adoc (leveloffset: +1)\n\n");
     }
 
     @Test

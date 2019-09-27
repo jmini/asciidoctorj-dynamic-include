@@ -92,7 +92,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         String idseparator = document.getAttribute("idseparator", "_")
                 .toString();
         List<FileHolder> list = sortedFiles.stream()
-                .map(p -> createFileHolder(root, p, idprefix, idseparator, levelOffsetShifting))
+                .map(p -> createFileHolder(dir, p, idprefix, idseparator, levelOffsetShifting))
                 .collect(Collectors.toList());
 
         if (logfile != null) {
@@ -207,15 +207,6 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return levelOffsetShifting;
     }
 
-    static int calculateOffset(Path root, Path path, String nameWithoutSuffix, int titleLevel, int levelOffsetShifting) {
-        int headerLevel = root.relativize(path)
-                .getNameCount() + levelOffsetShifting;
-        if ("index".equals(nameWithoutSuffix)) {
-            headerLevel = headerLevel - 1;
-        }
-        return headerLevel - titleLevel;
-    }
-
     static String outputOffset(int offset) {
         if (offset > 0) {
             return "+" + offset;
@@ -258,8 +249,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return document.hasAttribute(documentKey);
     }
 
-    public static FileHolder createFileHolder(Path root, Path path, String idprefix, String idseparator, int levelOffsetShifting) {
-        String key = root.relativize(path)
+    public static FileHolder createFileHolder(Path dir, Path path, String idprefix, String idseparator, int levelOffsetShifting) {
+        String key = dir.relativize(path)
                 .toString()
                 .replace('\\', '/');
 
@@ -296,7 +287,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             titleEnd = 0;
         }
 
-        int offset = calculateOffset(root, path, nameWithoutSuffix, titleLevel, levelOffsetShifting);
+        int offset = calculateOffset(dir, path, nameWithoutSuffix, titleLevel, levelOffsetShifting);
 
         return new FileHolder(path, key, nameWithoutSuffix, nameSuffix, content, titleType, title, titleLevel, offset, titleId, titleStart, titleEnd);
     }
@@ -316,6 +307,15 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         }
         sb.append(anchor);
         return sb.toString();
+    }
+
+    static int calculateOffset(Path dir, Path path, String nameWithoutSuffix, int titleLevel, int levelOffsetShifting) {
+        int headerLevel = dir.relativize(path)
+                .getNameCount() + levelOffsetShifting;
+        if ("index".equals(nameWithoutSuffix)) {
+            headerLevel = headerLevel - 1;
+        }
+        return headerLevel - titleLevel;
     }
 
     public static String replaceXrefDoubleAngledBracketLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot, boolean externalXrefAsText) {
