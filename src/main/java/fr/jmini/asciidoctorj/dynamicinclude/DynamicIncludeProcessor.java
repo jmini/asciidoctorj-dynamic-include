@@ -66,6 +66,9 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
         String logfile = readKey(document, attributes, "logfile", "dynamic-include-logfile");
 
+        String levelOffsetShiftingText = readKey(document, attributes, "level-offset-shifting", "dynamic-include-level-offset-shifting");
+        int levelOffsetShifting = convertLevelOffsetShifting(logger, levelOffsetShiftingText);
+
         boolean displayViewSourceLink = hasKey(document, attributes, "display-view-source", "dynamic-include-display-view-source");
         String viewSourceLinkPattern = readKey(document, attributes, "view-source-link-pattern", "dynamic-include-view-source-link-pattern");
         String viewSourceLinkText = readKey(document, attributes, "view-source-link-text", "dynamic-include-view-source-link-text");
@@ -89,7 +92,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         String idseparator = document.getAttribute("idseparator", "_")
                 .toString();
         List<FileHolder> list = sortedFiles.stream()
-                .map(p -> createFileHolder(root, p, idprefix, idseparator))
+                .map(p -> createFileHolder(root, p, idprefix, idseparator, levelOffsetShifting))
                 .collect(Collectors.toList());
 
         if (logfile != null) {
@@ -103,8 +106,16 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             sb.append(target);
             sb.append("\n");
 
+            sb.append("# level-offset-shifting: ");
+            sb.append(levelOffsetShifting);
+            sb.append("\n");
+
             list.forEach(h -> sb.append(h.getKey())
+                    .append(" (leveloffset: ")
+                    .append(outputOffset(h.getLevelOffset()))
+                    .append(")")
                     .append("\n"));
+            sb.append("\n");
 
             Path path = Paths.get(logfile);
             try {
@@ -149,11 +160,9 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 sb.append("[ link:" + viewSourceUrl + "[" + viewSourceLinkText + "] ]\n");
             }
 
-            int offset = calculateOffset(root, item);
-
-            if (offset != 0) {
+            if (item.getLevelOffset() != 0) {
                 sb.append("\n");
-                sb.append(":leveloffset: " + outputOffset(offset) + "\n");
+                sb.append(":leveloffset: " + outputOffset(item.getLevelOffset()) + "\n");
                 sb.append("\n");
                 lineNumber = lineNumber - 3;
             }
@@ -169,10 +178,10 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
             sb.append(item.getContent()
                     .substring(splitIndex));
-            if (offset != 0) {
+            if (item.getLevelOffset() != 0) {
                 sb.append("\n");
                 sb.append("\n");
-                sb.append(":leveloffset: " + outputOffset(-1 * offset) + "\n");
+                sb.append(":leveloffset: " + outputOffset(-1 * item.getLevelOffset()) + "\n");
             }
 
             String content = sb.toString();
@@ -183,13 +192,28 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         }
     }
 
-    static int calculateOffset(Path root, FileHolder holder) {
-        int headerLevel = root.relativize(holder.getPath())
-                .getNameCount() + 1;
-        if ("index".equals(holder.getNameWithoutSuffix())) {
+    static int convertLevelOffsetShifting(Consumer<String> logger, String levelOffsetShiftingText) {
+        int levelOffsetShifting;
+        if (levelOffsetShiftingText != null) {
+            if (levelOffsetShiftingText.matches("\\-?\\+?[0-9]+")) {
+                levelOffsetShifting = Integer.parseInt(levelOffsetShiftingText);
+            } else {
+                logger.accept("level-offset-shifting value '" + levelOffsetShiftingText + "' is not a valid number, using 1 as fallback");
+                levelOffsetShifting = 1;
+            }
+        } else {
+            levelOffsetShifting = 1;
+        }
+        return levelOffsetShifting;
+    }
+
+    static int calculateOffset(Path root, Path path, String nameWithoutSuffix, int titleLevel, int levelOffsetShifting) {
+        int headerLevel = root.relativize(path)
+                .getNameCount() + levelOffsetShifting;
+        if ("index".equals(nameWithoutSuffix)) {
             headerLevel = headerLevel - 1;
         }
-        return headerLevel - holder.getTitleLevel();
+        return headerLevel - titleLevel;
     }
 
     static String outputOffset(int offset) {
@@ -234,17 +258,17 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return document.hasAttribute(documentKey);
     }
 
-    public static FileHolder createFileHolder(Path root, Path p, String idprefix, String idseparator) {
-        String key = root.relativize(p)
+    public static FileHolder createFileHolder(Path root, Path path, String idprefix, String idseparator, int levelOffsetShifting) {
+        String key = root.relativize(path)
                 .toString()
                 .replace('\\', '/');
 
-        String fileName = p.toFile()
+        String fileName = path.toFile()
                 .getName();
         String nameWithoutSuffix = PathUtil.getNameWithoutSuffix(fileName);
         String nameSuffix = PathUtil.getNameSuffix(fileName);
 
-        String content = readFile(p);
+        String content = readFile(path);
 
         TitleType titleType;
         int titleLevel;
@@ -272,7 +296,9 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             titleEnd = 0;
         }
 
-        return new FileHolder(p, key, nameWithoutSuffix, nameSuffix, content, titleType, title, titleLevel, titleId, titleStart, titleEnd);
+        int offset = calculateOffset(root, path, nameWithoutSuffix, titleLevel, levelOffsetShifting);
+
+        return new FileHolder(path, key, nameWithoutSuffix, nameSuffix, content, titleType, title, titleLevel, offset, titleId, titleStart, titleEnd);
     }
 
     public static String computeTitleId(String text, String idprefix, String idseparator) {

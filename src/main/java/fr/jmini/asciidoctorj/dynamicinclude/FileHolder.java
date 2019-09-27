@@ -12,11 +12,12 @@ public class FileHolder {
     private TitleType titleType;
     private String title;
     private int titleLevel;
+    private int levelOffset;
     private String titleId;
     private int titleStart;
     private int titleEnd;
 
-    public FileHolder(Path path, String key, String nameWithoutSuffix, String nameSuffix, String content, TitleType titleType, String title, int titleLevel, String titleId, int titleStart, int titleEnd) {
+    public FileHolder(Path path, String key, String nameWithoutSuffix, String nameSuffix, String content, TitleType titleType, String title, int titleLevel, int levelOffset, String titleId, int titleStart, int titleEnd) {
         this.path = path;
         this.key = key;
         this.nameWithoutSuffix = nameWithoutSuffix;
@@ -25,6 +26,7 @@ public class FileHolder {
         this.titleType = titleType;
         this.title = title;
         this.titleLevel = titleLevel;
+        this.levelOffset = levelOffset;
         this.titleId = titleId;
         this.titleStart = titleStart;
         this.titleEnd = titleEnd;
@@ -60,6 +62,10 @@ public class FileHolder {
 
     public int getTitleLevel() {
         return titleLevel;
+    }
+
+    public int getLevelOffset() {
+        return levelOffset;
     }
 
     public String getTitleId() {
