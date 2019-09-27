@@ -1,3 +1,6 @@
-== Dynamic Include Test
+
+:root: ../
+
+= Dynamic Include Test
 
 include::dynamic:../pages/*.adoc[]

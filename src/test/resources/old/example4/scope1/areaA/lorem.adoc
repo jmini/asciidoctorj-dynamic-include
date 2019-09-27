@@ -1,5 +1,0 @@
-== Lorem
-
-=== Subtitle in scope1
-
-Lorem ipsum dolor sit amet.

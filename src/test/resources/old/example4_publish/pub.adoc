@@ -1,6 +1,0 @@
-:root: ../example4/
-:dynamic-include-logfile: build/unit-stest/example4-publish.logs
-
-== Dynamic Include Pub
-
-include::dynamic:../example4/**/*.adoc[scopes="scope3:scope2", areas="areaD:areaA"]

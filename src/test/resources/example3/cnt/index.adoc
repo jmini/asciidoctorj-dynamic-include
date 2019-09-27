@@ -3,6 +3,6 @@ ifndef::root[]
 :root: ../
 endif::[]
 
-=== Dolor
+=== Index
 
-Dolor
+Index

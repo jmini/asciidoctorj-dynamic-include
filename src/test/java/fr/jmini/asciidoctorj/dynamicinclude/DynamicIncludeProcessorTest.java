@@ -18,12 +18,34 @@ import fr.jmini.asciidoctorj.dynamicinclude.XrefHolder.XrefHolderType;
 public class DynamicIncludeProcessorTest {
 
     @Test
+    void testOutputOffset() throws Exception {
+        assertThat(DynamicIncludeProcessor.outputOffset(0)).isEqualTo("0");
+        assertThat(DynamicIncludeProcessor.outputOffset(1)).isEqualTo("+1");
+        assertThat(DynamicIncludeProcessor.outputOffset(2)).isEqualTo("+2");
+        assertThat(DynamicIncludeProcessor.outputOffset(-1)).isEqualTo("-1");
+        assertThat(DynamicIncludeProcessor.outputOffset(-2)).isEqualTo("-2");
+    }
+
+    @Test
+    void testCalculateOffset() throws Exception {
+        Path dir = Paths.get("dir");
+
+        Path page1 = dir.resolve("folder/index.adoc");
+        FileHolder holder1 = new FileHolder(page1, "folder/index.adoc", "index", null, "!! dummy content !!", TitleType.PRESENT, "Index", 2, "_index", 91, 95);
+        assertThat(DynamicIncludeProcessor.calculateOffset(dir, holder1)).isEqualTo(0);
+
+        Path page2 = dir.resolve("folder/page.adoc");
+        FileHolder holder2 = new FileHolder(page2, "folder/page.adoc", "page", null, "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
+        assertThat(DynamicIncludeProcessor.calculateOffset(dir, holder2)).isEqualTo(1);
+    }
+
+    @Test
     void testReplaceXrefDoubleAngledBracketLinks() throws Exception {
         Path dir = Paths.get("dir");
         Path page1 = dir.resolve("folder/page.adoc");
         Path page2 = dir.resolve("folder/other.adoc");
-        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", null, "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
-        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", null, "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
+        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", "page", null, "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
+        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", "other", null, "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
         List<FileHolder> list = Arrays.asList(holder1, holder2);
 
         String emptyList = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some content", Collections.emptyList(), dir, page1, dir, true);
@@ -62,8 +84,8 @@ public class DynamicIncludeProcessorTest {
         Path dir = Paths.get("dir");
         Path page1 = dir.resolve("folder/page.adoc");
         Path page2 = dir.resolve("folder/other.adoc");
-        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", null, "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
-        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", null, "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
+        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", null, null, "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
+        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", null, null, "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
         List<FileHolder> list = Arrays.asList(holder1, holder2);
 
         String emptyList = DynamicIncludeProcessor.replaceXrefInlineLinks("Some content", Collections.emptyList(), dir, page1, dir, true);
@@ -337,26 +359,25 @@ public class DynamicIncludeProcessorTest {
         Path dir = Paths.get("src/test/resources")
                 .toAbsolutePath();
 
-        Path path1 = dir.resolve("example2/content/content1.adoc");
+        Path path1 = dir.resolve("example4/page-lorem.adoc");
         FileHolder holder1 = DynamicIncludeProcessor.createFileHolder(dir, path1, "_", "_");
-        assertThat(holder1.getKey()).isEqualTo("example2/content/content1.adoc");
-        assertThat(holder1.getTitleType()).isEqualTo(TitleType.PRESENT);
-        assertThat(holder1.getTitle()).isEqualTo("Content 1");
-        assertThat(holder1.getTitleEnd()).isGreaterThan(90);
+        assertThat(holder1.getKey()).isEqualTo("example4/page-lorem.adoc");
+        assertThat(holder1.getTitleType()).isEqualTo(TitleType.ABSENT);
+        assertThat(holder1.getTitleEnd()).isEqualTo(0);
 
-        Path path2 = dir.resolve("example1/pages/page2.adoc");
+        Path path2 = dir.resolve("example4/page-ipsum.adoc");
         FileHolder holder2 = DynamicIncludeProcessor.createFileHolder(dir, path2, "_", "_");
-        assertThat(holder2.getKey()).isEqualTo("example1/pages/page2.adoc");
-        assertThat(holder2.getTitleType()).isEqualTo(TitleType.ABSENT);
-        assertThat(holder2.getTitleEnd()).isEqualTo(0);
+        assertThat(holder2.getKey()).isEqualTo("example4/page-ipsum.adoc");
+        assertThat(holder2.getTitleType()).isEqualTo(TitleType.COMMENTED);
+        assertThat(holder2.getTitle()).isEqualTo("Ipsum");
+        assertThat(holder2.getTitleEnd()).isEqualTo(10);
 
-        Path path3 = dir.resolve("page.adoc");
+        Path path3 = dir.resolve("example4/page-dolor.adoc");
         FileHolder holder3 = DynamicIncludeProcessor.createFileHolder(dir, path3, "_", "_");
-        assertThat(holder3.getKey()).isEqualTo("page.adoc");
-        assertThat(holder3.getTitleType()).isEqualTo(TitleType.COMMENTED);
-        assertThat(holder3.getTitle()).isEqualTo("Page Test");
-        assertThat(holder3.getTitleEnd()).isEqualTo(15);
-
+        assertThat(holder3.getKey()).isEqualTo("example4/page-dolor.adoc");
+        assertThat(holder3.getTitleType()).isEqualTo(TitleType.PRESENT);
+        assertThat(holder3.getTitle()).isEqualTo("Dolor");
+        assertThat(holder3.getTitleEnd()).isEqualTo(8);
     }
 
     @Test
@@ -413,6 +434,6 @@ public class DynamicIncludeProcessorTest {
 
     private FileHolder createFileHolder(Path dir, String subPath) {
         Path page = dir.resolve(subPath);
-        return new FileHolder(page, subPath, null, "!! some content !!", TitleType.ABSENT, null, 0, null, 100, 101);
+        return new FileHolder(page, subPath, null, null, "!! some content !!", TitleType.ABSENT, null, 0, null, 100, 101);
     }
 }

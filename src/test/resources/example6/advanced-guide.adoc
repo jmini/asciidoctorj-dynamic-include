@@ -1,0 +1,3 @@
+= Advanced guide
+
+include::dynamic:pages/*.adoc[suffixes="advanced"]

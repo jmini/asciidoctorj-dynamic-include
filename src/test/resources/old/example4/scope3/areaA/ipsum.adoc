@@ -1,3 +1,0 @@
-== Ipsum
-
-scope3.areaA

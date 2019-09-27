@@ -4,6 +4,6 @@ ifndef::root[]
 :root:
 endif::[]
 
-== Example 3
+= Example 3
 
-include::dynamic:**/*.adoc[order="pages.txt", external-xref-as-text="true"]
+include::dynamic:**/*.adoc[external-xref-as-text="true"]

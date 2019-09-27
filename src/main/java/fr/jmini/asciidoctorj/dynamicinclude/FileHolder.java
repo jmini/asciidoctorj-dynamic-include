@@ -5,6 +5,7 @@ import java.nio.file.Path;
 public class FileHolder {
 
     private Path path;
+    private String nameWithoutSuffix;
     private String nameSuffix;
     private String key;
     private String content;
@@ -15,9 +16,10 @@ public class FileHolder {
     private int titleStart;
     private int titleEnd;
 
-    public FileHolder(Path path, String key, String nameSuffix, String content, TitleType titleType, String title, int titleLevel, String titleId, int titleStart, int titleEnd) {
+    public FileHolder(Path path, String key, String nameWithoutSuffix, String nameSuffix, String content, TitleType titleType, String title, int titleLevel, String titleId, int titleStart, int titleEnd) {
         this.path = path;
         this.key = key;
+        this.nameWithoutSuffix = nameWithoutSuffix;
         this.nameSuffix = nameSuffix;
         this.content = content;
         this.titleType = titleType;
@@ -34,6 +36,10 @@ public class FileHolder {
 
     public String getKey() {
         return key;
+    }
+
+    public String getNameWithoutSuffix() {
+        return nameWithoutSuffix;
     }
 
     public String getNameSuffix() {

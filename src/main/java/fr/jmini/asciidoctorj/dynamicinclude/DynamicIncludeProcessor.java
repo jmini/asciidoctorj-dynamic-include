@@ -138,34 +138,65 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                     .substring(0, splitIndex);
             int lineNumber = countLines(header);
 
-            StringBuilder prefixSb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
 
             if (displayViewSourceLink) {
                 String viewSourceUrl = replacePlaceholders(viewSourceLinkPattern, path, (String k) -> getDocumentAttribute(document, k));
 
                 lineNumber = lineNumber - 3;
-                prefixSb.append("\n");
-                prefixSb.append("[.dynamic-include-view-source]\n");
-                prefixSb.append("[ link:" + viewSourceUrl + "[" + viewSourceLinkText + "] ]\n");
+                sb.append("\n");
+                sb.append("[.dynamic-include-view-source]\n");
+                sb.append("[ link:" + viewSourceUrl + "[" + viewSourceLinkText + "] ]\n");
             }
 
+            int offset = calculateOffset(root, item);
+
+            if (offset != 0) {
+                sb.append("\n");
+                sb.append(":leveloffset: " + outputOffset(offset) + "\n");
+                sb.append("\n");
+                lineNumber = lineNumber - 3;
+            }
             if (!previousTitleEquals) {
                 if (item.getTitleType() == TitleType.PRESENT) {
-                    prefixSb.append("\n");
+                    sb.append("\n");
                     lineNumber = lineNumber - 1;
                 } else {
-                    prefixSb.append("[#" + item.getTitleId() + "]\n");
+                    sb.append("[#" + item.getTitleId() + "]\n");
                     lineNumber = lineNumber - 1;
                 }
             }
 
-            String content = prefixSb.toString() + item.getContent()
-                    .substring(splitIndex);
+            sb.append(item.getContent()
+                    .substring(splitIndex));
+            if (offset != 0) {
+                sb.append("\n");
+                sb.append("\n");
+                sb.append(":leveloffset: " + outputOffset(-1 * offset) + "\n");
+            }
+
+            String content = sb.toString();
             content = replaceXrefDoubleAngledBracketLinks(content, list, dir, path, root, externalXrefAsText);
             content = replaceXrefInlineLinks(content, list, dir, path, root, externalXrefAsText);
 
             reader.push_include(content, file.getName(), path.toString(), lineNumber, attributes);
         }
+    }
+
+    static int calculateOffset(Path root, FileHolder holder) {
+        int headerLevel = root.relativize(holder.getPath())
+                .getNameCount() + 1;
+        if ("index".equals(holder.getNameWithoutSuffix())) {
+            headerLevel = headerLevel - 1;
+        }
+        return headerLevel - holder.getTitleLevel();
+    }
+
+    static String outputOffset(int offset) {
+        if (offset > 0) {
+            return "+" + offset;
+        }
+        return "" + offset;
     }
 
     private String readKey(Document document, Map<String, Object> attributes, String includeKey, String documentKey) {
@@ -210,7 +241,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
         String fileName = p.toFile()
                 .getName();
-
+        String nameWithoutSuffix = PathUtil.getNameWithoutSuffix(fileName);
         String nameSuffix = PathUtil.getNameSuffix(fileName);
 
         String content = readFile(p);
@@ -241,7 +272,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             titleEnd = 0;
         }
 
-        return new FileHolder(p, key, nameSuffix, content, titleType, title, titleLevel, titleId, titleStart, titleEnd);
+        return new FileHolder(p, key, nameWithoutSuffix, nameSuffix, content, titleType, title, titleLevel, titleId, titleStart, titleEnd);
     }
 
     public static String computeTitleId(String text, String idprefix, String idseparator) {

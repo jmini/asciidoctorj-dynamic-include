@@ -1,3 +1,0 @@
-== Dynamic Include Test 3
-
-include::dynamic:pages/*.adoc[order="order3.txt"]

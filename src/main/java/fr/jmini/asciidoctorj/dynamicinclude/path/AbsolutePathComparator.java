@@ -75,7 +75,11 @@ public class AbsolutePathComparator implements Comparator<Path> {
         } else if ("index".equals(nameWithoutSuffix2)) {
             return 1;
         }
-        return compareNames(name1, name2);
+        int result = nameWithoutSuffix1.compareTo(nameWithoutSuffix2);
+        if (result == 0) {
+            return compareNames(name1, name2);
+        }
+        return result;
     }
 
     private int compareNames(String name1, String name2) {
