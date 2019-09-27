@@ -1,11 +1,11 @@
-=== Chapter IV
+= Chapter IV
 
 This is chapter 4.
 
-==== Lorem
+== Lorem
 
 Lorem
 
-==== Ipsum
+== Ipsum
 
 Ipsum
