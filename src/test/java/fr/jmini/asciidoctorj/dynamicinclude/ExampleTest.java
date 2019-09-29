@@ -61,11 +61,11 @@ public class ExampleTest {
     }
 
     @Test
-    public void testExample1Pub() throws Exception {
+    public void testExample1Publish() throws Exception {
         Path logfile = Files.createTempFile("test", "log")
                 .toAbsolutePath();
 
-        List<LogRecord> logs = runTest("example1/pub", "pub", logfile.toString());
+        List<LogRecord> logs = runTest("example1/publish", "publish", logfile.toString());
         assertThat(logs).isEmpty();
 
         String content = readFile(logfile);
@@ -75,6 +75,23 @@ public class ExampleTest {
                 "../pages/index.adoc (leveloffset: 0)\n" +
                 "../pages/page1.adoc (leveloffset: +1)\n" +
                 "../pages/page2.adoc (leveloffset: +1)\n\n");
+    }
+
+    @Test
+    public void testExample1SubPublish() throws Exception {
+        Path logfile = Files.createTempFile("test", "log")
+                .toAbsolutePath();
+
+        List<LogRecord> logs = runTest("example1/publish/sub", "main", logfile.toString());
+        assertThat(logs).isEmpty();
+
+        String content = readFile(logfile);
+        assertThat(content).isEqualTo("# File: \n" +
+                "# Target: dynamic:../../pages/*.adoc\n" +
+                "# level-offset-shifting: -1\n" +
+                "../../pages/index.adoc (leveloffset: 0)\n" +
+                "../../pages/page1.adoc (leveloffset: +1)\n" +
+                "../../pages/page2.adoc (leveloffset: +1)\n\n");
     }
 
     @Test

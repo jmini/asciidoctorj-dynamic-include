@@ -248,7 +248,7 @@ public class PathUtilTest {
         assertThat(list101).containsExactly("pages/index.adoc", "pages/page1.adoc", "pages/page2.adoc");
 
         List<String> list102 = findAndSortFiles(example1, "**/*.adoc", Collections.emptyList());
-        assertThat(list102).containsExactly("pages/index.adoc", "pages/page1.adoc", "pages/page2.adoc", "pub/pub.adoc");
+        assertThat(list102).containsExactly("pages/index.adoc", "pages/page1.adoc", "pages/page2.adoc", "publish/publish.adoc", "publish/sub/main.adoc");
 
         List<String> list103 = findAndSortFiles(example1.resolve("pages"), "*.adoc", Collections.emptyList());
         assertThat(list103).containsExactly("index.adoc", "page1.adoc", "page2.adoc");
