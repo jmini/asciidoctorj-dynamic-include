@@ -244,54 +244,67 @@ public class PathUtilTest {
         Path example1 = Paths.get("src/test/resources/example1")
                 .toAbsolutePath();
 
-        List<String> list101 = findAndSortFiles(example1, "pages/*.adoc", Collections.emptyList());
+        List<String> list101 = findAndSortFiles(example1, "index.adoc", "pages/*.adoc", Collections.emptyList());
         assertThat(list101).containsExactly("pages/index.adoc", "pages/page1.adoc", "pages/page2.adoc");
 
-        List<String> list102 = findAndSortFiles(example1, "**/*.adoc", Collections.emptyList());
+        List<String> list102 = findAndSortFiles(example1, "index.adoc", "**/*.adoc", Collections.emptyList());
         assertThat(list102).containsExactly("pages/index.adoc", "pages/page1.adoc", "pages/page2.adoc", "publish/publish.adoc", "publish/sub/main.adoc");
 
-        List<String> list103 = findAndSortFiles(example1.resolve("pages"), "*.adoc", Collections.emptyList());
+        List<String> list103 = findAndSortFiles(example1.resolve("pages"), "test.adoc", "*.adoc", Collections.emptyList());
         assertThat(list103).containsExactly("index.adoc", "page1.adoc", "page2.adoc");
 
-        List<String> list104 = findAndSortFiles(example1, "pages/page*.adoc", Collections.emptyList());
+        List<String> list104 = findAndSortFiles(example1, "index.adoc", "pages/page*.adoc", Collections.emptyList());
         assertThat(list104).containsExactly("pages/page1.adoc", "pages/page2.adoc");
 
         Path example2 = Paths.get("src/test/resources/example2")
                 .toAbsolutePath();
 
-        List<String> list201 = findAndSortFiles(example2, "content/*.adoc", Collections.emptyList());
+        List<String> list201 = findAndSortFiles(example2, "index.adoc", "content/*.adoc", Collections.emptyList());
         assertThat(list201).containsExactly("content/index.adoc", "content/content1.adoc", "content/content2.adoc");
 
         Path example3 = Paths.get("src/test/resources/example3")
                 .toAbsolutePath();
 
-        List<String> list301 = findAndSortFiles(example3, "cnt/*.adoc", Collections.emptyList());
+        List<String> list301 = findAndSortFiles(example3, "index.adoc", "cnt/*.adoc", Collections.emptyList());
         assertThat(list301).containsExactly("cnt/index.adoc", "cnt/lorem.adoc", "cnt/ipsum.adoc", "cnt/dolor.adoc");
+
+        Path example4 = Paths.get("src/test/resources/example4")
+                .toAbsolutePath();
+
+        List<String> list401 = findAndSortFiles(example4, "index.adoc", "page*.adoc", Collections.emptyList());
+        assertThat(list401).containsExactly("page-lorem.adoc", "page-ipsum.adoc", "page-dolor.adoc");
+
+        List<String> list402 = findAndSortFiles(example4, "index.adoc", "*.adoc", Collections.emptyList());
+        assertThat(list402).containsExactly("page-lorem.adoc", "page-ipsum.adoc", "page-dolor.adoc");
+
+        List<String> list403 = findAndSortFiles(example4, "other.adoc", "*.adoc", Collections.emptyList());
+        assertThat(list403).containsExactly("index.adoc", "page-lorem.adoc", "page-ipsum.adoc", "page-dolor.adoc");
 
         Path example6 = Paths.get("src/test/resources/example6")
                 .toAbsolutePath();
 
-        List<String> list601 = findAndSortFiles(example6, "pages/*.adoc", Collections.emptyList());
+        List<String> list601 = findAndSortFiles(example6, "index.adoc", "pages/*.adoc", Collections.emptyList());
         assertThat(list601).containsExactly("pages/index.adoc", "pages/page1.adoc", "pages/page2.adoc");
 
-        List<String> list602 = findAndSortFiles(example6, "pages/*.adoc", Collections.singletonList("internal"));
+        List<String> list602 = findAndSortFiles(example6, "index.adoc", "pages/*.adoc", Collections.singletonList("internal"));
         assertThat(list602).containsExactly("pages/index.adoc", "pages/page1.adoc", "pages/page1.internal.adoc", "pages/page2.adoc", "pages/page2.internal.adoc");
 
-        List<String> list603 = findAndSortFiles(example6, "pages/*.adoc", Collections.singletonList("advanced"));
+        List<String> list603 = findAndSortFiles(example6, "index.adoc", "pages/*.adoc", Collections.singletonList("advanced"));
         assertThat(list603).containsExactly("pages/index.adoc", "pages/page1.adoc", "pages/page1.advanced.adoc", "pages/page2.adoc", "pages/page2.advanced.adoc");
 
-        List<String> list604 = findAndSortFiles(example6, "pages/*.adoc", Arrays.asList("advanced", "internal"));
+        List<String> list604 = findAndSortFiles(example6, "index.adoc", "pages/*.adoc", Arrays.asList("advanced", "internal"));
         assertThat(list604).containsExactly("pages/index.adoc", "pages/page1.adoc", "pages/page1.advanced.adoc", "pages/page1.internal.adoc", "pages/page2.adoc", "pages/page2.advanced.adoc", "pages/page2.internal.adoc");
 
-        List<String> list605 = findAndSortFiles(example6, "pages/*.adoc", Arrays.asList("internal", "advanced"));
+        List<String> list605 = findAndSortFiles(example6, "index.adoc", "pages/*.adoc", Arrays.asList("internal", "advanced"));
         assertThat(list605).containsExactly("pages/index.adoc", "pages/page1.adoc", "pages/page1.internal.adoc", "pages/page1.advanced.adoc", "pages/page2.adoc", "pages/page2.internal.adoc", "pages/page2.advanced.adoc");
 
     }
 
-    private List<String> findAndSortFiles(Path dir, String glob, List<String> nameSuffixes) throws IOException {
+    private List<String> findAndSortFiles(Path dir, String currentFileName, String glob, List<String> nameSuffixes) throws IOException {
         List<String> messages = new ArrayList<>();
         List<Path> findFiles = PathUtil.findFiles(dir, glob, nameSuffixes);
-        List<Path> sortedFiles = PathUtil.sortFiles(messages::add, findFiles, nameSuffixes);
+        List<Path> filtered = PathUtil.filterCurrentFile(findFiles, dir.resolve(currentFileName));
+        List<Path> sortedFiles = PathUtil.sortFiles(messages::add, filtered, nameSuffixes);
         List<String> list = sortedFiles
                 .stream()
                 .map(p -> dir.relativize(p)

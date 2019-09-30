@@ -72,6 +72,13 @@ public class PathUtil {
         return Collections.unmodifiableList(result);
     }
 
+    public static List<Path> filterCurrentFile(List<Path> files, Path currentFile) {
+        List<Path> filteredFile = files.stream()
+                .filter(p -> !currentFile.equals(p))
+                .collect(Collectors.toList());
+        return filteredFile;
+    }
+
     public static List<Path> sortFiles(Consumer<String> logger, List<Path> list, List<String> suffixes) {
         AbsolutePathComparator comparator = new AbsolutePathComparator(PathUtil::loadPageOrder, suffixes);
         List<Path> result = list.stream()

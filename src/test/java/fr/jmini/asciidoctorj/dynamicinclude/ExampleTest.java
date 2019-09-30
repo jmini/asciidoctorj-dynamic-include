@@ -160,14 +160,25 @@ public class ExampleTest {
         assertThat(logs).isEmpty();
     }
 
+    @Test
+    public void testExample7() throws Exception {
+        List<LogRecord> logs = runTest("example7", "index", null, true);
+        assertThat(logs).isEmpty();
+    }
+
     private List<LogRecord> runTest(String folder, String fileName) throws IOException, URISyntaxException {
-        return runTest(folder, fileName, null);
+        return runTest(folder, fileName, null, false);
     }
 
     private List<LogRecord> runTest(String folder, String fileName, String logfile) throws IOException, URISyntaxException {
+        return runTest(folder, fileName, logfile, false);
+    }
+
+    private List<LogRecord> runTest(String folder, String fileName, String logfile, boolean asFile) throws IOException, URISyntaxException {
         Path exampleFolder = Paths.get("src/test/resources/" + folder)
                 .toAbsolutePath();
-        String content = new String(Files.readAllBytes(exampleFolder.resolve(fileName + ".adoc")), StandardCharsets.UTF_8);
+        Path contentFile = exampleFolder.resolve(fileName + ".adoc");
+        String content = new String(Files.readAllBytes(contentFile), StandardCharsets.UTF_8);
         String expected = new String(Files.readAllBytes(exampleFolder.resolve(fileName + ".html")), StandardCharsets.UTF_8);
 
         Asciidoctor asciidoctor = Factory.create();
@@ -189,7 +200,13 @@ public class ExampleTest {
                 .baseDir(exampleFolder.toFile())
                 .docType("book")
                 .safe(SafeMode.UNSAFE);
-        String html = asciidoctor.convert(content, optionsBuilder);
+        String html;
+        if (asFile) {
+            asciidoctor.convertFile(contentFile.toFile(), optionsBuilder);
+            html = new String(Files.readAllBytes(exampleFolder.resolve(fileName + ".html")), StandardCharsets.UTF_8);
+        } else {
+            html = asciidoctor.convert(content, optionsBuilder);
+        }
 
         assertThat(html).isEqualTo(expected);
 

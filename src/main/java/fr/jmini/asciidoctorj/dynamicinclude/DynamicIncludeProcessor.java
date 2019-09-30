@@ -57,6 +57,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
     public void process(Document document, PreprocessorReader reader, String target, Map<String, Object> attributes) {
         Consumer<String> logger = (String message) -> log(new LogRecord(Severity.WARN, message));
         Path dir = Paths.get(reader.getDir());
+        Path currentFile = dir.resolve(reader.getFile())
+                .toAbsolutePath();
         String glob = target.substring(PREFIX.length());
 
         String suffixesText = readKey(document, attributes, "suffixes", "dynamic-include-suffixes");
@@ -85,7 +87,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             root = dir;
         }
         List<Path> files = PathUtil.findFiles(dir, glob, suffixes);
-        List<Path> sortedFiles = PathUtil.sortFiles(logger, files, suffixes);
+        List<Path> filteredFile = PathUtil.filterCurrentFile(files, currentFile);
+        List<Path> sortedFiles = PathUtil.sortFiles(logger, filteredFile, suffixes);
 
         String idprefix = document.getAttribute("idprefix", "_")
                 .toString();
