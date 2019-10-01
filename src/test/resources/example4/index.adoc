@@ -1,0 +1,3 @@
+= Example 4
+
+include::dynamic:page*.adoc[external-xref-as-text="true"]

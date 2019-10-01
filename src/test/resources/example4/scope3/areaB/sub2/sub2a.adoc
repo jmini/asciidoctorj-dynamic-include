@@ -1,3 +1,0 @@
-=== Sub2a
-
-scope3.areaB.sub2

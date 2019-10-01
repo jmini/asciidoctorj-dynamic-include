@@ -1,0 +1,5 @@
+= Guide Test
+
+This is an example guide
+
+include::dynamic:pages/page*.adoc[level-offset-shifting=0]

@@ -2,17 +2,15 @@ package fr.jmini.asciidoctorj.dynamicinclude;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -21,372 +19,57 @@ import fr.jmini.asciidoctorj.dynamicinclude.XrefHolder.XrefHolderType;
 public class DynamicIncludeProcessorTest {
 
     @Test
-    void testFindFiles() throws Exception {
-        Path example1 = Paths.get("src/test/resources/example1");
+    void testConvertLevelOffsetShifting() throws Exception {
+        List<String> list;
+        list = new ArrayList<String>();
+        assertThat(DynamicIncludeProcessor.convertLevelOffsetShifting(list::add, "0")).isEqualTo(0);
+        assertThat(list).isEmpty();
 
-        List<String> list101 = findFiles(example1, "pages/*.adoc", Collections.emptyList(), Collections.emptyList());
-        assertThat(list101).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc");
+        list = new ArrayList<String>();
+        assertThat(DynamicIncludeProcessor.convertLevelOffsetShifting(list::add, "1")).isEqualTo(1);
+        assertThat(list).isEmpty();
 
-        List<String> list102 = findFiles(example1, "**/*.adoc", Collections.emptyList(), Collections.emptyList());
-        assertThat(list102).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc", "pub/pub.adoc", "pub/pub1.adoc");
+        list = new ArrayList<String>();
+        assertThat(DynamicIncludeProcessor.convertLevelOffsetShifting(list::add, "+1")).isEqualTo(1);
+        assertThat(list).isEmpty();
 
-        List<String> list103 = findFiles(example1.resolve("pages"), "*.adoc", Collections.emptyList(), Collections.emptyList());
-        assertThat(list103).containsExactly("page1.adoc", "page2.adoc", "zpage.adoc");
+        list = new ArrayList<String>();
+        assertThat(DynamicIncludeProcessor.convertLevelOffsetShifting(list::add, "-1")).isEqualTo(-1);
+        assertThat(list).isEmpty();
 
-        List<String> list104 = findFiles(example1, "pages/page*.adoc", Collections.emptyList(), Collections.emptyList());
-        assertThat(list104).containsExactly("pages/page1.adoc", "pages/page2.adoc");
+        list = new ArrayList<String>();
+        assertThat(DynamicIncludeProcessor.convertLevelOffsetShifting(list::add, null)).isEqualTo(1);
+        assertThat(list).isEmpty();
 
-        List<String> list105 = findFiles(example1, "**/*.adoc", Collections.singletonList("pages"), Collections.emptyList());
-        assertThat(list105).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc");
+        list = new ArrayList<String>();
+        assertThat(DynamicIncludeProcessor.convertLevelOffsetShifting(list::add, "abc")).isEqualTo(1);
+        assertThat(list).containsOnly("level-offset-shifting value 'abc' is not a valid number, using 1 as fallback");
 
-        List<String> list106 = findFiles(example1, "**/*.adoc", Collections.singletonList("xxx"), Collections.emptyList());
-        assertThat(list106).isEmpty();
-
-        List<String> list107 = findFiles(example1.resolve("pages"), "*.adoc", Collections.singletonList("xxx"), Collections.emptyList());
-        assertThat(list107).isEmpty();
-
-        List<String> list108 = findFiles(example1.resolve("pub"), "../pages/*.adoc", Collections.emptyList(), Collections.emptyList());
-        assertThat(list108).containsExactly("../pages/page1.adoc", "../pages/page2.adoc", "../pages/zpage.adoc");
-
-        List<String> list109 = findFiles(example1.toAbsolutePath(), "pages/*.adoc", Collections.emptyList(), Collections.emptyList());
-        assertThat(list109).containsExactly("pages/page1.adoc", "pages/page2.adoc", "pages/zpage.adoc");
-
-        List<String> list110 = findFiles(example1.resolve("pub")
-                .toAbsolutePath(), "../pages/*.adoc", Collections.emptyList(), Collections.emptyList());
-        assertThat(list110).containsExactly("../pages/page1.adoc", "../pages/page2.adoc", "../pages/zpage.adoc");
-
-        Path example4 = Paths.get("src/test/resources/example4");
-
-        List<String> list41 = findFiles(example4, "**/*.adoc", Collections.singletonList("scope1"), Collections.emptyList());
-        assertThat(list41).containsExactly(
-                "scope1/areaA/ipsum.adoc",
-                "scope1/areaA/lorem.adoc",
-                "scope1/areaB/main.adoc",
-                "scope1/areaB/sub1/sub1.adoc",
-                "scope1/areaB/sub2/sub2b.adoc");
-
-        List<String> list42 = findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2"), Collections.emptyList());
-        assertThat(list42).containsExactly(
-                "scope1/areaA/ipsum.adoc",
-                "scope1/areaA/lorem.adoc",
-                "scope1/areaB/main.adoc",
-                "scope1/areaB/sub1/sub1.adoc",
-                "scope1/areaB/sub2/sub2b.adoc",
-                "scope2/areaA/ipsum.adoc",
-                "scope2/areaA/lorem.adoc",
-                "scope2/areaC/areaC.adoc");
-
-        List<String> list43 = findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2", "xxx"), Collections.emptyList());
-        assertThat(list43).containsExactly(
-                "scope1/areaA/ipsum.adoc",
-                "scope1/areaA/lorem.adoc",
-                "scope1/areaB/main.adoc",
-                "scope1/areaB/sub1/sub1.adoc",
-                "scope1/areaB/sub2/sub2b.adoc",
-                "scope2/areaA/ipsum.adoc",
-                "scope2/areaA/lorem.adoc",
-                "scope2/areaC/areaC.adoc");
-
-        List<String> list44 = findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2"), Collections.singletonList("xxx"));
-        assertThat(list44).isEmpty();
-
-        List<String> list45 = findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2"), Collections.singletonList("areaA"));
-        assertThat(list45).containsExactly(
-                "scope1/areaA/ipsum.adoc",
-                "scope1/areaA/lorem.adoc",
-                "scope2/areaA/ipsum.adoc",
-                "scope2/areaA/lorem.adoc");
-
-        List<String> list46 = findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2", "xxx"), Arrays.asList("areaA", "areaB"));
-        assertThat(list46).containsExactly(
-                "scope1/areaA/ipsum.adoc",
-                "scope1/areaA/lorem.adoc",
-                "scope1/areaB/main.adoc",
-                "scope1/areaB/sub1/sub1.adoc",
-                "scope1/areaB/sub2/sub2b.adoc",
-                "scope2/areaA/ipsum.adoc",
-                "scope2/areaA/lorem.adoc");
-
-        List<String> list47 = findFiles(example4, "**/*.adoc", Arrays.asList("scope1", "scope2", "xxx"), Arrays.asList("areaA", "areaB", "xxx"));
-        assertThat(list47).containsExactly(
-                "scope1/areaA/ipsum.adoc",
-                "scope1/areaA/lorem.adoc",
-                "scope1/areaB/main.adoc",
-                "scope1/areaB/sub1/sub1.adoc",
-                "scope1/areaB/sub2/sub2b.adoc",
-                "scope2/areaA/ipsum.adoc",
-                "scope2/areaA/lorem.adoc");
-    }
-
-    private List<String> findFiles(Path dir, String glob, List<String> scopes, List<String> areas) throws IOException {
-        List<String> list = DynamicIncludeProcessor.findFiles(dir, dir, glob, scopes, areas)
-                .stream()
-                .map(p -> dir.relativize(p)
-                        .toString()
-                        .replace('\\', '/'))
-                .sorted()
-                .collect(Collectors.toList());
-        return list;
+        list = new ArrayList<String>();
+        assertThat(DynamicIncludeProcessor.convertLevelOffsetShifting(list::add, "")).isEqualTo(1);
+        assertThat(list).containsOnly("level-offset-shifting value '' is not a valid number, using 1 as fallback");
     }
 
     @Test
-    void testConvertGlobToRegex() throws Exception {
-        // star becomes dot star
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl*b")).isEqualTo("gl.*b");
-
-        // escaped star is unchanged
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl\\*b")).isEqualTo("gl\\*b");
-
-        // question mark becomes dot
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl?b")).isEqualTo("gl.b");
-
-        // escaped question mark is unchanged
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl\\?b")).isEqualTo("gl\\?b");
-
-        // character classes dont need conversion
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl[-o]b")).isEqualTo("gl[-o]b");
-
-        // escaped classes are unchanged
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl\\[-o\\]b")).isEqualTo("gl\\[-o\\]b");
-
-        // negation in character classes
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl[!a-n!p-z]b")).isEqualTo("gl[^a-n!p-z]b");
-
-        // nested negation in character classes
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl[[!a-n]!p-z]b")).isEqualTo("gl[[^a-n]!p-z]b");
-
-        // escape carat if it is the first char in a character class
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl[^o]b")).isEqualTo("gl[\\^o]b");
-
-        // meta chars are escaped
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl?*.()+|^$@%b")).isEqualTo("gl..*\\.\\(\\)\\+\\|\\^\\$\\@\\%b");
-
-        // meta chars in character classes don't need escaping
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl[?*.()+|^$@%]b")).isEqualTo("gl[?*.()+|^$@%]b");
-
-        // escaped backslash is unchanged
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("gl\\\\b")).isEqualTo("gl\\\\b");
-
-        // slashQ and slashE are escaped
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("\\Qglob\\E")).isEqualTo("\\\\Qglob\\\\E");
-
-        // braces are turned into groups
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("{glob,regex}")).isEqualTo("(glob|regex)");
-
-        // escaped braces are unchanged
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("\\{glob\\}")).isEqualTo("\\{glob\\}");
-
-        // commas dont need escaping
-        assertThat(DynamicIncludeProcessor.convertGlobToRegex("{glob\\,regex},")).isEqualTo("(glob,regex),");
+    void testOutputOffset() throws Exception {
+        assertThat(DynamicIncludeProcessor.outputOffset(0)).isEqualTo("0");
+        assertThat(DynamicIncludeProcessor.outputOffset(1)).isEqualTo("+1");
+        assertThat(DynamicIncludeProcessor.outputOffset(2)).isEqualTo("+2");
+        assertThat(DynamicIncludeProcessor.outputOffset(-1)).isEqualTo("-1");
+        assertThat(DynamicIncludeProcessor.outputOffset(-2)).isEqualTo("-2");
     }
 
     @Test
-    void testComparator() throws Exception {
-        List<Integer> input = Arrays.asList(10, 24, 52, 3, 43, 91);
-        Function<Integer, String> keyExtractor = i -> i.toString();
-
-        List<String> order1 = Collections.emptyList();
-        MessageCollector collector1 = new MessageCollector();
-        Comparator<Integer> comparator1 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(collector1, input, order1, i -> i.toString());
-        List<Integer> list1 = sortIntegerList(input, comparator1, keyExtractor);
-        assertThat(list1).containsExactly(10, 24, 3, 43, 52, 91);
-        assertThat(collector1.getMessages()).isEmpty();
-
-        List<String> order2 = Arrays.asList("3", "10", "91", "52", "43", "24");
-        MessageCollector collector2 = new MessageCollector();
-        Comparator<Integer> comparator2 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(collector2, input, order2, keyExtractor);
-        List<Integer> list2 = sortIntegerList(input, comparator2, keyExtractor);
-        assertThat(list2).containsExactly(3, 10, 91, 52, 43, 24);
-        assertThat(collector2.getMessages()).isEmpty();
-
-        List<String> order3 = Arrays.asList("91", "3");
-        MessageCollector collector3 = new MessageCollector();
-        Comparator<Integer> comparator3 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(collector3, input, order3, keyExtractor);
-        List<Integer> list3 = sortIntegerList(input, comparator3, keyExtractor);
-        assertThat(list3).containsExactly(91, 3, 10, 24, 43, 52);
-        assertThat(collector3.getMessages()).containsExactly(
-                "Did not find any information order for '10', putting it at the end of the document",
-                "Did not find any information order for '24', putting it at the end of the document",
-                "Did not find any information order for '52', putting it at the end of the document",
-                "Did not find any information order for '43', putting it at the end of the document");
-
-        List<String> order4 = Arrays.asList("[0-9]", "[0-9]+");
-        MessageCollector collector4 = new MessageCollector();
-        Comparator<Integer> comparator4 = DynamicIncludeProcessor.getOrderedKeyPatternComparator(collector4, input, order4, keyExtractor);
-        List<Integer> list4 = sortIntegerList(input, comparator4, keyExtractor);
-        assertThat(list4).containsExactly(3, 10, 24, 43, 52, 91);
-        assertThat(collector4.getMessages()).isEmpty();
-
-        List<String> order5 = Arrays.asList("3", "10", "91", "52", "43", "24");
-        Comparator<Integer> comparator5 = DynamicIncludeProcessor.getOrderedValuesComparator(input, order5, keyExtractor, keyExtractor);
-        List<Integer> list5 = sortIntegerList(input, comparator5, keyExtractor);
-        assertThat(list5).containsExactly(3, 10, 91, 52, 43, 24);
-
-        List<String> order6 = Arrays.asList("91", "3");
-        Comparator<Integer> comparator6 = DynamicIncludeProcessor.getOrderedValuesComparator(input, order6, keyExtractor, keyExtractor);
-        List<Integer> list6 = sortIntegerList(input, comparator6, keyExtractor);
-        assertThat(list6).containsExactly(91, 3, 10, 24, 43, 52);
-    }
-
-    private List<Integer> sortIntegerList(List<Integer> list, Comparator<Integer> comparator, Function<Integer, String> keyExtractor) {
-        return list.stream()
-                .sorted(comparator.thenComparing(Comparator.comparing(keyExtractor)))
-                .collect(Collectors.toList());
-    }
-
-    @Test
-    void testSortList() throws Exception {
+    void testCalculateOffset() throws Exception {
         Path dir = Paths.get("dir");
-        List<FileHolder> input = Arrays.asList(
-                createFileHolder(dir, "s1/a1/page8.adoc", "s1", "a1"),
-                createFileHolder(dir, "s2/a2/page2.adoc", "s2", "a2"),
-                createFileHolder(dir, "s1/a3/pageB.adoc", "s1", "a3"),
-                createFileHolder(dir, "s2/a1/page3.adoc", "s2", "a1"),
-                createFileHolder(dir, "s1/a2/pageA.adoc", "s1", "a2"),
-                createFileHolder(dir, "s2/a3/pageC.adoc", "s2", "a3"));
 
-        MessageCollector collector1 = new MessageCollector();
-        List<String> list1 = sortList(input, collector1, Collections.emptyList(), Arrays.asList("s1", "s2"), Collections.emptyList());
-        assertThat(list1).containsExactly(
-                "s1/a1/page8.adoc",
-                "s1/a2/pageA.adoc",
-                "s1/a3/pageB.adoc",
-                "s2/a1/page3.adoc",
-                "s2/a2/page2.adoc",
-                "s2/a3/pageC.adoc");
-        assertThat(collector1.getMessages()).isEmpty();
+        Path page1 = dir.resolve("folder/index.adoc");
+        assertThat(DynamicIncludeProcessor.calculateOffset(dir, page1, "index", 2, 1)).isEqualTo(0);
+        assertThat(DynamicIncludeProcessor.calculateOffset(dir, page1, "index", 2, 2)).isEqualTo(1);
 
-        MessageCollector collector2 = new MessageCollector();
-        List<String> list2 = sortList(input, collector2, Collections.emptyList(), Arrays.asList("s1", "s2"), Arrays.asList("a2", "a1", "xx", "a3"));
-        assertThat(list2).containsExactly(
-                "s1/a2/pageA.adoc",
-                "s1/a1/page8.adoc",
-                "s1/a3/pageB.adoc",
-                "s2/a2/page2.adoc",
-                "s2/a1/page3.adoc",
-                "s2/a3/pageC.adoc");
-        assertThat(collector2.getMessages()).isEmpty();
-
-        MessageCollector collector3 = new MessageCollector();
-        List<String> list3 = sortList(input, collector3, Collections.singletonList("s[0-9]\\/a[0-9]\\/page[A-Z].adoc"), Arrays.asList("s2", "s1"), Arrays.asList("a3", "a1", "a2"));
-        assertThat(list3).containsExactly(
-                "s2/a3/pageC.adoc",
-                "s1/a3/pageB.adoc",
-                "s1/a2/pageA.adoc",
-                "s2/a1/page3.adoc",
-                "s2/a2/page2.adoc",
-                "s1/a1/page8.adoc");
-        assertThat(collector3.getMessages()).containsExactly(
-                "Did not find any information order for 's1/a1/page8.adoc', putting it at the end of the document",
-                "Did not find any information order for 's2/a2/page2.adoc', putting it at the end of the document",
-                "Did not find any information order for 's2/a1/page3.adoc', putting it at the end of the document");
-    }
-
-    private List<String> sortList(List<FileHolder> input, MessageCollector collector, List<String> patternOrder, List<String> scopesOrder, List<String> areasOrder) {
-        List<String> list1 = DynamicIncludeProcessor.sortList(collector, input, patternOrder, scopesOrder, areasOrder)
-                .stream()
-                .map(FileHolder::getKey)
-                .collect(Collectors.toList());
-        return list1;
-    }
-
-    private FileHolder createFileHolder(Path dir, String subPath, String scope, String area) {
-        Path page = dir.resolve(subPath);
-        return new FileHolder(page, subPath, scope, area, "!! some content !!", TitleType.ABSENT, null, 0, null, 100, 101);
-    }
-
-    @Test
-    void testfindFilesAndSort() throws Exception {
-        MessageCollector collector1 = new MessageCollector();
-        List<String> list1 = findFilesAndSort(collector1, Collections.emptyList());
-        assertThat(list1).containsExactly(
-                "scope1/areaA/ipsum.adoc",
-                "scope1/areaA/lorem.adoc",
-                "scope1/areaB/main.adoc",
-                "scope1/areaB/sub1/sub1.adoc",
-                "scope1/areaB/sub2/sub2b.adoc",
-                "scope2/areaA/ipsum.adoc",
-                "scope2/areaA/lorem.adoc");
-        assertThat(collector1.getMessages()).isEmpty();
-
-        MessageCollector collector2 = new MessageCollector();
-        List<String> list2 = findFilesAndSort(collector2, Arrays.asList(
-                "scope1/areaA/ipsum.adoc",
-                "scope2/areaA/ipsum.adoc",
-                "scope1/areaA/lorem.adoc",
-                "scope2/areaA/lorem.adoc",
-                "scope1/areaB/sub2/sub2b.adoc",
-                "scope1/areaB/sub1/sub1.adoc",
-                "scope1/areaB/main.adoc"));
-        assertThat(list2).containsExactly(
-                "scope1/areaA/ipsum.adoc",
-                "scope2/areaA/ipsum.adoc",
-                "scope1/areaA/lorem.adoc",
-                "scope2/areaA/lorem.adoc",
-                "scope1/areaB/sub2/sub2b.adoc",
-                "scope1/areaB/sub1/sub1.adoc",
-                "scope1/areaB/main.adoc");
-        assertThat(collector2.getMessages()).isEmpty();
-
-        MessageCollector collector3 = new MessageCollector();
-        List<String> list3 = findFilesAndSort(collector3, Arrays.asList(
-                "scope2/*/*.adoc",
-                "scope1/*/*/*.adoc",
-                "scope1/*/*.adoc"));
-        assertThat(list3).containsExactly(
-                "scope2/areaA/ipsum.adoc",
-                "scope2/areaA/lorem.adoc",
-                "scope1/areaB/sub1/sub1.adoc",
-                "scope1/areaB/sub2/sub2b.adoc",
-                "scope1/areaA/ipsum.adoc",
-                "scope1/areaA/lorem.adoc",
-                "scope1/areaB/main.adoc");
-        assertThat(collector3.getMessages()).isEmpty();
-
-        MessageCollector collector4 = new MessageCollector();
-        List<String> list4 = findFilesAndSort(collector4, Arrays.asList(
-                "scope2/*",
-                "scope1/*"));
-        assertThat(list4).containsExactly(
-                "scope2/areaA/ipsum.adoc",
-                "scope2/areaA/lorem.adoc",
-                "scope1/areaA/ipsum.adoc",
-                "scope1/areaA/lorem.adoc",
-                "scope1/areaB/main.adoc",
-                "scope1/areaB/sub1/sub1.adoc",
-                "scope1/areaB/sub2/sub2b.adoc");
-        assertThat(collector4.getMessages()).isEmpty();
-
-        MessageCollector collector5 = new MessageCollector();
-        List<String> list5 = findFilesAndSort(collector5, Arrays.asList(
-                "*/areaB/*",
-                "*/areaA/*"));
-        assertThat(list5).containsExactly(
-                "scope1/areaB/main.adoc",
-                "scope1/areaB/sub1/sub1.adoc",
-                "scope1/areaB/sub2/sub2b.adoc",
-                "scope1/areaA/ipsum.adoc",
-                "scope1/areaA/lorem.adoc",
-                "scope2/areaA/ipsum.adoc",
-                "scope2/areaA/lorem.adoc");
-        assertThat(collector5.getMessages()).isEmpty();
-
-    }
-
-    private List<String> findFilesAndSort(MessageCollector collector, List<String> sortOrder) throws IOException {
-        Path example4 = Paths.get("src/test/resources/example4");
-        List<Path> list = DynamicIncludeProcessor.findFiles(example4, example4, "**/*.adoc", Arrays.asList("scope1", "scope2"), Arrays.asList("areaA", "areaB"));
-        List<String> order = sortOrder.stream()
-                .map(DynamicIncludeProcessor::convertGlobToRegex)
-                .collect(Collectors.toList());
-        Function<Path, String> toKey = p -> example4.relativize(p)
-                .toString()
-                .replace('\\', '/');
-        Comparator<Path> comparator = DynamicIncludeProcessor.getOrderedKeyPatternComparator(collector, list, order, toKey);
-        return list.stream()
-                .sorted(comparator.thenComparing(Comparator.comparing(toKey)))
-                .map(toKey)
-                .collect(Collectors.toList());
+        Path page2 = dir.resolve("folder/page.adoc");
+        assertThat(DynamicIncludeProcessor.calculateOffset(dir, page2, "page", 2, 1)).isEqualTo(1);
+        assertThat(DynamicIncludeProcessor.calculateOffset(dir, page2, "page", 2, 2)).isEqualTo(2);
     }
 
     @Test
@@ -394,8 +77,8 @@ public class DynamicIncludeProcessorTest {
         Path dir = Paths.get("dir");
         Path page1 = dir.resolve("folder/page.adoc");
         Path page2 = dir.resolve("folder/other.adoc");
-        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", null, null, "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
-        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", null, null, "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
+        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", "page", null, "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, 1, "_page_1", 91, 95);
+        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", "other", null, "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, 1, "_other_page", 101, 105);
         List<FileHolder> list = Arrays.asList(holder1, holder2);
 
         String emptyList = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some content", Collections.emptyList(), dir, page1, dir, true);
@@ -434,8 +117,8 @@ public class DynamicIncludeProcessorTest {
         Path dir = Paths.get("dir");
         Path page1 = dir.resolve("folder/page.adoc");
         Path page2 = dir.resolve("folder/other.adoc");
-        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", null, null, "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, "_page_1", 91, 95);
-        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", null, null, "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, "_other_page", 101, 105);
+        FileHolder holder1 = new FileHolder(page1, "folder/page.adoc", null, null, "!! dummy content !!", TitleType.PRESENT, "Page 1", 2, 1, "_page_1", 91, 95);
+        FileHolder holder2 = new FileHolder(page2, "folder/other.adoc", null, null, "!! dummy content !!", TitleType.PRESENT, "Other Page", 2, 1, "_other_page", 101, 105);
         List<FileHolder> list = Arrays.asList(holder1, holder2);
 
         String emptyList = DynamicIncludeProcessor.replaceXrefInlineLinks("Some content", Collections.emptyList(), dir, page1, dir, true);
@@ -709,26 +392,25 @@ public class DynamicIncludeProcessorTest {
         Path dir = Paths.get("src/test/resources")
                 .toAbsolutePath();
 
-        Path path1 = dir.resolve("example2/content/content1.adoc");
-        FileHolder holder1 = DynamicIncludeProcessor.createFileHolder(dir, dir, path1, "_", "_");
-        assertThat(holder1.getKey()).isEqualTo("example2/content/content1.adoc");
-        assertThat(holder1.getTitleType()).isEqualTo(TitleType.PRESENT);
-        assertThat(holder1.getTitle()).isEqualTo("Content 1");
-        assertThat(holder1.getTitleEnd()).isGreaterThan(90);
+        Path path1 = dir.resolve("example4/page-lorem.adoc");
+        FileHolder holder1 = DynamicIncludeProcessor.createFileHolder(dir, path1, "_", "_", 1);
+        assertThat(holder1.getKey()).isEqualTo("example4/page-lorem.adoc");
+        assertThat(holder1.getTitleType()).isEqualTo(TitleType.ABSENT);
+        assertThat(holder1.getTitleEnd()).isEqualTo(0);
 
-        Path path2 = dir.resolve("example1/pages/page2.adoc");
-        FileHolder holder2 = DynamicIncludeProcessor.createFileHolder(dir, dir, path2, "_", "_");
-        assertThat(holder2.getKey()).isEqualTo("example1/pages/page2.adoc");
-        assertThat(holder2.getTitleType()).isEqualTo(TitleType.ABSENT);
-        assertThat(holder2.getTitleEnd()).isEqualTo(0);
+        Path path2 = dir.resolve("example4/page-ipsum.adoc");
+        FileHolder holder2 = DynamicIncludeProcessor.createFileHolder(dir, path2, "_", "_", 1);
+        assertThat(holder2.getKey()).isEqualTo("example4/page-ipsum.adoc");
+        assertThat(holder2.getTitleType()).isEqualTo(TitleType.COMMENTED);
+        assertThat(holder2.getTitle()).isEqualTo("Ipsum");
+        assertThat(holder2.getTitleEnd()).isEqualTo(10);
 
-        Path path3 = dir.resolve("page.adoc");
-        FileHolder holder3 = DynamicIncludeProcessor.createFileHolder(dir, dir, path3, "_", "_");
-        assertThat(holder3.getKey()).isEqualTo("page.adoc");
-        assertThat(holder3.getTitleType()).isEqualTo(TitleType.COMMENTED);
-        assertThat(holder3.getTitle()).isEqualTo("Page Test");
-        assertThat(holder3.getTitleEnd()).isEqualTo(15);
-
+        Path path3 = dir.resolve("example4/page-dolor.adoc");
+        FileHolder holder3 = DynamicIncludeProcessor.createFileHolder(dir, path3, "_", "_", 1);
+        assertThat(holder3.getKey()).isEqualTo("example4/page-dolor.adoc");
+        assertThat(holder3.getTitleType()).isEqualTo(TitleType.PRESENT);
+        assertThat(holder3.getTitle()).isEqualTo("Dolor");
+        assertThat(holder3.getTitleEnd()).isEqualTo(8);
     }
 
     @Test
@@ -781,5 +463,10 @@ public class DynamicIncludeProcessorTest {
         assertThat(DynamicIncludeProcessor.replacePlaceholders("https://example.com/{file-relative-to-git-repository}", file, attributeGetter)).isEqualTo("https://example.com/file.txt");
         assertThat(DynamicIncludeProcessor.replacePlaceholders("https://example.com/{file-relative-to-gradle-projectdir}", file, attributeGetter)).isEqualTo("https://example.com/file.txt");
         assertThat(DynamicIncludeProcessor.replacePlaceholders("https://example.com/{file-relative-to-gradle-rootdir}", file, attributeGetter)).isEqualTo("https://example.com/path/file.txt");
+    }
+
+    private FileHolder createFileHolder(Path dir, String subPath) {
+        Path page = dir.resolve(subPath);
+        return new FileHolder(page, subPath, null, null, "!! some content !!", TitleType.ABSENT, null, 0, 0, null, 100, 101);
     }
 }

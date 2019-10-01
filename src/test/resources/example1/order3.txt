@@ -1,2 +1,0 @@
-pages/zpage.adoc
-pages/page*.adoc

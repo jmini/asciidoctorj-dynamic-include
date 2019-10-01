@@ -1,3 +1,0 @@
-== Dynamic include test 2
-
-include::dynamic:**/*.adoc[order="pages.txt", scopes="scope1:scope2"]

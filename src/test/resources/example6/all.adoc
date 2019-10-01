@@ -1,0 +1,3 @@
+= Guide
+
+include::dynamic:pages/*.adoc[suffixes="advanced:internal"]

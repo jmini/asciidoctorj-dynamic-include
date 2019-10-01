@@ -1,3 +1,0 @@
-== Main
-
-scope1.areaB

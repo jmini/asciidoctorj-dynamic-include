@@ -1,3 +1,0 @@
-=== Main (scope3 addition)
-
-scope3.areaB

@@ -1,0 +1,5 @@
+= Guide (internal)
+
+:dynamic-include-suffixes: internal
+
+include::dynamic:pages/*.adoc[]

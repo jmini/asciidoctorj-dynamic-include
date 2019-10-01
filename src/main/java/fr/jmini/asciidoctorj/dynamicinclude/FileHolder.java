@@ -5,26 +5,28 @@ import java.nio.file.Path;
 public class FileHolder {
 
     private Path path;
-    private String pathScope;
-    private String pathArea;
+    private String nameWithoutSuffix;
+    private String nameSuffix;
     private String key;
     private String content;
     private TitleType titleType;
     private String title;
     private int titleLevel;
+    private int levelOffset;
     private String titleId;
     private int titleStart;
     private int titleEnd;
 
-    public FileHolder(Path path, String key, String pathScope, String pathArea, String content, TitleType titleType, String title, int titleLevel, String titleId, int titleStart, int titleEnd) {
+    public FileHolder(Path path, String key, String nameWithoutSuffix, String nameSuffix, String content, TitleType titleType, String title, int titleLevel, int levelOffset, String titleId, int titleStart, int titleEnd) {
         this.path = path;
         this.key = key;
-        this.pathScope = pathScope;
-        this.pathArea = pathArea;
+        this.nameWithoutSuffix = nameWithoutSuffix;
+        this.nameSuffix = nameSuffix;
         this.content = content;
         this.titleType = titleType;
         this.title = title;
         this.titleLevel = titleLevel;
+        this.levelOffset = levelOffset;
         this.titleId = titleId;
         this.titleStart = titleStart;
         this.titleEnd = titleEnd;
@@ -38,12 +40,12 @@ public class FileHolder {
         return key;
     }
 
-    public String getPathScope() {
-        return pathScope;
+    public String getNameWithoutSuffix() {
+        return nameWithoutSuffix;
     }
 
-    public String getPathArea() {
-        return pathArea;
+    public String getNameSuffix() {
+        return nameSuffix;
     }
 
     public String getContent() {
@@ -60,6 +62,10 @@ public class FileHolder {
 
     public int getTitleLevel() {
         return titleLevel;
+    }
+
+    public int getLevelOffset() {
+        return levelOffset;
     }
 
     public String getTitleId() {

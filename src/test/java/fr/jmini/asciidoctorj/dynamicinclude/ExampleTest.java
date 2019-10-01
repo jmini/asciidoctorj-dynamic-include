@@ -16,7 +16,6 @@ import org.asciidoctor.AttributesBuilder;
 import org.asciidoctor.OptionsBuilder;
 import org.asciidoctor.SafeMode;
 import org.asciidoctor.log.LogRecord;
-import org.asciidoctor.log.Severity;
 import org.junit.jupiter.api.Test;
 
 public class ExampleTest {
@@ -32,48 +31,67 @@ public class ExampleTest {
         String content = readFile(logfile);
         assertThat(content).isEqualTo("# File: \n" +
                 "# Target: dynamic:pages/*.adoc\n" +
-                "pages/page1.adoc\n" +
-                "pages/page2.adoc\n" +
-                "pages/zpage.adoc\n");
+                "# level-offset-shifting: 1\n" +
+                "pages/index.adoc (leveloffset: 0)\n" +
+                "pages/page1.adoc (leveloffset: +1)\n" +
+                "pages/page2.adoc (leveloffset: +1)\n\n");
     }
 
     @Test
-    public void testExample1Index1() throws Exception {
-        List<LogRecord> logs = runTest("example1", "index1");
+    public void testExample1Guide() throws Exception {
+        Path logfile = Files.createTempFile("test", "log")
+                .toAbsolutePath();
+
+        List<LogRecord> logs = runTest("example1", "guide", logfile.toString());
+        assertThat(logs).isEmpty();
+
+        String content = readFile(logfile);
+        assertThat(content).isEqualTo("# File: \n" +
+                "# Target: dynamic:pages/*.adoc\n" +
+                "# level-offset-shifting: 2\n" +
+                "pages/index.adoc (leveloffset: +1)\n" +
+                "pages/page1.adoc (leveloffset: +2)\n" +
+                "pages/page2.adoc (leveloffset: +2)\n\n");
+    }
+
+    @Test
+    public void testExample1OnlyPages() throws Exception {
+        List<LogRecord> logs = runTest("example1", "only-pages", null);
         assertThat(logs).isEmpty();
     }
 
     @Test
-    public void testExample1Index2() throws Exception {
-        List<LogRecord> logs = runTest("example1", "index2");
-        assertThat(logs).hasSize(1);
-        LogRecord log = logs.get(0);
-        assertThat(log.getSeverity()).isEqualTo(Severity.WARN);
-        assertThat(log.getMessage()).isEqualTo("Did not find any information order for 'pages/page1.adoc', putting it at the end of the document");
+    public void testExample1Publish() throws Exception {
+        Path logfile = Files.createTempFile("test", "log")
+                .toAbsolutePath();
+
+        List<LogRecord> logs = runTest("example1/publish", "publish", logfile.toString());
+        assertThat(logs).isEmpty();
+
+        String content = readFile(logfile);
+        assertThat(content).isEqualTo("# File: \n" +
+                "# Target: dynamic:../pages/*.adoc\n" +
+                "# level-offset-shifting: 0\n" +
+                "../pages/index.adoc (leveloffset: 0)\n" +
+                "../pages/page1.adoc (leveloffset: +1)\n" +
+                "../pages/page2.adoc (leveloffset: +1)\n\n");
     }
 
     @Test
-    public void testExample1Index3() throws Exception {
-        List<LogRecord> logs = runTest("example1", "index3");
-        assertThat(logs).isEmpty();
-    }
+    public void testExample1SubPublish() throws Exception {
+        Path logfile = Files.createTempFile("test", "log")
+                .toAbsolutePath();
 
-    @Test
-    public void testExample1Index4() throws Exception {
-        List<LogRecord> logs = runTest("example1", "index4");
+        List<LogRecord> logs = runTest("example1/publish/sub", "main", logfile.toString());
         assertThat(logs).isEmpty();
-    }
 
-    @Test
-    public void testExample1Pub() throws Exception {
-        List<LogRecord> logs = runTest("example1/pub", "pub");
-        assertThat(logs).isEmpty();
-    }
-
-    @Test
-    public void testExample1Pub1() throws Exception {
-        List<LogRecord> logs = runTest("example1/pub", "pub1");
-        assertThat(logs).isEmpty();
+        String content = readFile(logfile);
+        assertThat(content).isEqualTo("# File: \n" +
+                "# Target: dynamic:../../pages/*.adoc\n" +
+                "# level-offset-shifting: -1\n" +
+                "../../pages/index.adoc (leveloffset: 0)\n" +
+                "../../pages/page1.adoc (leveloffset: +1)\n" +
+                "../../pages/page2.adoc (leveloffset: +1)\n\n");
     }
 
     @Test
@@ -104,62 +122,63 @@ public class ExampleTest {
     }
 
     @Test
-    public void testExample4Test1() throws Exception {
-        List<LogRecord> logs = runTest("example4", "test1");
+    public void testExample4() throws Exception {
+        List<LogRecord> logs = runTest("example4", "index");
         assertThat(logs).isEmpty();
     }
 
     @Test
-    public void testExample4Test2() throws Exception {
-        List<LogRecord> logs = runTest("example4", "test2");
+    public void testExample5() throws Exception {
+        List<LogRecord> logs = runTest("example5", "index");
+        assertThat(logs).hasSize(1);
+        LogRecord record = logs.get(0);
+        assertThat(record.getMessage()).startsWith("No ordering indication for 'info' in '");
+        assertThat(record.getMessage()).endsWith("src/test/resources/example5/chapter-two', putting it at the end");
+    }
+
+    @Test
+    public void testExample6Simple() throws Exception {
+        List<LogRecord> logs = runTest("example6", "simple-guide");
         assertThat(logs).isEmpty();
     }
 
     @Test
-    public void testExample4Test3() throws Exception {
-        List<LogRecord> logs = runTest("example4", "test3");
+    public void testExample6Advanced() throws Exception {
+        List<LogRecord> logs = runTest("example6", "advanced-guide");
         assertThat(logs).isEmpty();
     }
 
     @Test
-    public void testExample4Test4() throws Exception {
-        List<LogRecord> logs = runTest("example4", "test4");
-        assertThat(logs).hasSize(2);
-        LogRecord log1 = logs.get(0);
-        assertThat(log1.getSeverity()).isEqualTo(Severity.WARN);
-        assertThat(log1.getMessage()).isEqualTo("Did not find any information order for 'scope2/areaC/areaC.adoc', putting it at the end of the document");
-        LogRecord log2 = logs.get(1);
-        assertThat(log2.getSeverity()).isEqualTo(Severity.WARN);
-        assertThat(log2.getMessage()).isEqualTo("Did not find any information order for 'scope3/areaD/areaD.adoc', putting it at the end of the document");
+    public void testExample6Internal() throws Exception {
+        List<LogRecord> logs = runTest("example6", "internal-guide");
+        assertThat(logs).isEmpty();
     }
 
     @Test
-    public void testExample4Pub() throws Exception {
-        Path logFile = Paths.get("build/unit-stest/example4-publish.logs");
-        if (Files.exists(logFile)) {
-            Files.delete(logFile);
-        }
-
-        List<LogRecord> logs = runTest("example4_publish", "pub");
+    public void testExample6All() throws Exception {
+        List<LogRecord> logs = runTest("example6", "all");
         assertThat(logs).isEmpty();
+    }
 
-        assertThat(logFile).isRegularFile();
-        assertThat(logFile).hasContent("# File: \n"
-                + "# Target: dynamic:../example4/**/*.adoc\n"
-                + "../example4/scope3/areaD/areaD.adoc\n"
-                + "../example4/scope3/areaA/ipsum.adoc\n"
-                + "../example4/scope2/areaA/ipsum.adoc\n"
-                + "../example4/scope2/areaA/lorem.adoc\n");
+    @Test
+    public void testExample7() throws Exception {
+        List<LogRecord> logs = runTest("example7", "index", null, true);
+        assertThat(logs).isEmpty();
     }
 
     private List<LogRecord> runTest(String folder, String fileName) throws IOException, URISyntaxException {
-        return runTest(folder, fileName, null);
+        return runTest(folder, fileName, null, false);
     }
 
     private List<LogRecord> runTest(String folder, String fileName, String logfile) throws IOException, URISyntaxException {
+        return runTest(folder, fileName, logfile, false);
+    }
+
+    private List<LogRecord> runTest(String folder, String fileName, String logfile, boolean asFile) throws IOException, URISyntaxException {
         Path exampleFolder = Paths.get("src/test/resources/" + folder)
                 .toAbsolutePath();
-        String content = new String(Files.readAllBytes(exampleFolder.resolve(fileName + ".adoc")), StandardCharsets.UTF_8);
+        Path contentFile = exampleFolder.resolve(fileName + ".adoc");
+        String content = new String(Files.readAllBytes(contentFile), StandardCharsets.UTF_8);
         String expected = new String(Files.readAllBytes(exampleFolder.resolve(fileName + ".html")), StandardCharsets.UTF_8);
 
         Asciidoctor asciidoctor = Factory.create();
@@ -168,7 +187,8 @@ public class ExampleTest {
 
         AttributesBuilder attributesBuilder = AttributesBuilder.attributes()
                 .setAnchors(false)
-                .sectionNumbers(false);
+                .sectionNumbers(false)
+                .attribute("nofooter", true);
         if (logfile != null) {
             attributesBuilder.attribute("dynamic-include-logfile", logfile);
         }
@@ -179,9 +199,15 @@ public class ExampleTest {
         OptionsBuilder optionsBuilder = OptionsBuilder.options()
                 .attributes(attributesBuilder)
                 .baseDir(exampleFolder.toFile())
-                .docType("article")
+                .docType("book")
                 .safe(SafeMode.UNSAFE);
-        String html = asciidoctor.convert(content, optionsBuilder);
+        String html;
+        if (asFile) {
+            asciidoctor.convertFile(contentFile.toFile(), optionsBuilder);
+            html = new String(Files.readAllBytes(exampleFolder.resolve(fileName + ".html")), StandardCharsets.UTF_8);
+        } else {
+            html = asciidoctor.convert(content, optionsBuilder);
+        }
 
         assertThat(html).isEqualTo(expected);
 

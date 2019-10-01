@@ -1,0 +1,9 @@
+= Guide Test
+
+This is an example guide
+
+== Content dynamically included
+
+:dynamic-include-level-offset-shifting: 2
+
+include::dynamic:pages/*.adoc[]

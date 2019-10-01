@@ -1,0 +1,3 @@
+= Simple Guide
+
+include::dynamic:pages/*.adoc[]

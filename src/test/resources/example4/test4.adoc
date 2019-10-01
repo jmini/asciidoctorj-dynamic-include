@@ -1,3 +1,0 @@
-== Dynamic include test 4
-
-include::dynamic:**/*.adoc[order="pages-wildcard.txt", areas-order="areaB:areaA:areaD:areaC"]

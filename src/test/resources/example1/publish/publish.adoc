@@ -1,0 +1,6 @@
+
+:root: ../
+
+= Dynamic Include Test
+
+include::dynamic:../pages/*.adoc[level-offset-shifting=0]
