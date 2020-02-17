@@ -4,6 +4,6 @@ ifndef::root[]
 :root:
 endif::[]
 
-= Example 6
+= Example 7
 
 include::dynamic:**.adoc[]
