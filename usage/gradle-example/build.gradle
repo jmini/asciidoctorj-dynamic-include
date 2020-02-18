@@ -1,5 +1,5 @@
 plugins {
-    id 'org.asciidoctor.convert' version '2.2.0'
+    id 'org.asciidoctor.convert' version '2.4.0'
 }
 
 wrapper {
@@ -10,7 +10,7 @@ group = 'fr.jmini.example'
 version = '1.0.0-SNAPSHOT'
 
 asciidoctorj {
-    version = '2.0.0'
+    version = '2.2.0'
 }
 
 // tag::task[]
@@ -34,7 +34,7 @@ asciidoctor {
         mavenCentral()
     }
     dependencies {
-        asciidoctor 'fr.jmini.asciidoctorj:dynamic-include:1.2.0' // <1>
+        asciidoctor 'fr.jmini.asciidoctorj:dynamic-include:2.1.0' // <1>
     }
 }
 // end::task[]
