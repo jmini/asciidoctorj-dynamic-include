@@ -23,6 +23,9 @@ import java.util.stream.Collectors;
 
 import org.yaml.snakeyaml.Yaml;
 
+import fr.jmini.asciidoctorj.dynamicinclude.config.Pages;
+import fr.jmini.asciidoctorj.dynamicinclude.config.SortConfig;
+
 /**
  * @author jbr
  *
@@ -91,14 +94,13 @@ public class PathUtil {
         return result;
     }
 
-    static List<String> loadPageOrder(Path path) {
+    static SortConfig loadPageOrder(Path path) {
         if (Files.isDirectory(path)) {
             Path yamlFile = path.resolve("pages.yaml");
             if (Files.isReadable(yamlFile)) {
                 Yaml yaml = new Yaml();
                 try (InputStream inputStream = Files.newInputStream(yamlFile)) {
-                    Pages pages = yaml.loadAs(inputStream, Pages.class);
-                    return pages.getOrder();
+                    return yaml.loadAs(inputStream, Pages.class);
                 } catch (IOException e) {
                     //TODO do something with this exception
                     e.printStackTrace();
