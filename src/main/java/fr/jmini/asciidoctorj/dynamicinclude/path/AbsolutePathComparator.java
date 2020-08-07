@@ -70,12 +70,12 @@ public class AbsolutePathComparator implements Comparator<Path> {
                         return result;
                     } else {
                         messages.add("No ordering indication for '" + nameWithoutSuffix2 + "' in '" + commonPath + "', putting it at the end");
-                        return 1;
+                        return -1;
                     }
                 } else {
                     messages.add("No ordering indication for '" + nameWithoutSuffix1 + "' in '" + commonPath + "', putting it at the end");
                     if (order.contains(nameWithoutSuffix2)) {
-                        return -1;
+                        return 1;
                     }
                 }
             }
