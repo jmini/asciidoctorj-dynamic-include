@@ -21,6 +21,7 @@ targetCompatibility = 1.8
 
 repositories {
     jcenter()
+    mavenCentral()
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -49,9 +50,10 @@ test {
 }
 
 dependencies {
-    implementation 'fr.jmini.utils:substring-finder:1.0.1'
+    implementation "fr.jmini.utils:path-order:$pathorderVersion"
+    implementation "fr.jmini.utils:substring-finder:$substringFinder"
     implementation "org.asciidoctor:asciidoctorj:$asciidoctorjVersion"
-    implementation 'org.yaml:snakeyaml:1.25'
+    implementation "org.yaml:snakeyaml:$snakeyamlVersion"
 
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
@@ -182,3 +184,4 @@ task doRelease {
         'gitPublishPush'
     )
 }
+
