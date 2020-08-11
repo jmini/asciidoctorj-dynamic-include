@@ -23,8 +23,10 @@ import java.util.stream.Collectors;
 
 import org.yaml.snakeyaml.Yaml;
 
-import fr.jmini.asciidoctorj.dynamicinclude.config.Pages;
-import fr.jmini.asciidoctorj.dynamicinclude.config.SortConfig;
+import fr.jmini.utils.pathorder.AbsolutePathComparator;
+import fr.jmini.utils.pathorder.Order;
+import fr.jmini.utils.pathorder.Pages;
+import fr.jmini.utils.pathorder.SortConfig;
 
 /**
  * @author jbr
@@ -83,7 +85,7 @@ public class PathUtil {
     }
 
     public static List<Path> sortFiles(Consumer<String> logger, List<Path> list, List<String> suffixes) {
-        AbsolutePathComparator comparator = new AbsolutePathComparator(PathUtil::loadPageOrder, suffixes);
+        AbsolutePathComparator comparator = new AbsolutePathComparator(PathUtil::loadPageOrder, suffixes, Order.NATURAL);
         List<Path> result = list.stream()
                 .sorted(comparator)
                 .collect(Collectors.toList());
