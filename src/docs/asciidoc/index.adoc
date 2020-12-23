@@ -21,11 +21,72 @@ TIP: Do you want to improve this page? Please git-link:self[edit it on GitHub, e
 
 == Description
 
-{project-name} is an extension for AsciidoctorJ that allow you to include files using globbing pattern.
+{project-name} is an extension for AsciidoctorJ that allows to include files using a globbing pattern.
 
-NOTE: TODO describe the extension configuration.
+More concretely instead of including different files one by one:
 
-=== AsciidoctorJ version
+[source, adoc]
+.traditional way to include multiple files into a document
+----
+= My book
+
+\include::content/chapter01.adoc[]
+
+\include::content/chapter02.adoc[]
+
+\include::content/chapter03.adoc[]
+----
+
+It is possible to include them all with a single include:
+
+[source, adoc]
+.include of files using the dynamic-include processor
+----
+= My book
+
+\include::dynamic:content/*.adoc[]
+----
+
+To control the order of the included files, the approach using `pages.yaml` described in the project link:https://jmini.github.io/path-order/[path-order] can be used.
+
+The processor will take care of the title levels.
+
+Each file can start with a level 2: `== My title`
+
+Meaning that they are valid documents individually.
+
+When the pages are combined using the dynamic-include, the processor will add the corresponding `:leveloffset:` necessary to have a consistent level.
+A sub-folder will correspond to a shift of one in the hierarchy, with a special processing of the `index.adoc` page.
+
+This allows to have a tree structure like this:
+
+----
+├── chapter-one
+│   ├── content-section
+│   │   ├── content-1.adoc
+│   │   ├── content-2.adoc
+│   │   └── index.adoc
+│   ├── end-section
+│   │   └── index.adoc
+│   ├── index.adoc
+│   ├── intro.adoc
+│   └── pages.yaml
+├── chapter-three
+│   ├── index.adoc
+│   ├── page1.adoc
+│   └── page2.adoc
+├── chapter-two
+│   ├── index.adoc
+│   ├── info.adoc
+│   ├── pages.yaml
+│   ├── section-1.adoc
+│   └── section-a.adoc
+├── index.adoc
+├── index.html
+└── pages.yaml
+----
+
+== AsciidoctorJ version
 
 The latest version of this extension is built and tested with version `{asciidoctorj-version}` of `org.asciidoctor:asciidoctorj`.
 If you are using an older version of AsciidoctorJ, you can use an older version of this plugin:
