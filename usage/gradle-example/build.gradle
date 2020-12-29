@@ -1,5 +1,5 @@
 plugins {
-    id 'org.asciidoctor.convert' version '2.4.0'
+    id 'org.asciidoctor.jvm.convert' version '3.3.0'
 }
 
 wrapper {
@@ -9,16 +9,23 @@ wrapper {
 group = 'fr.jmini.example'
 version = '1.0.0-SNAPSHOT'
 
+configurations {
+    asciidoctorExtensions
+}
+
 asciidoctorj {
     version = '2.2.0'
 }
 
 // tag::task[]
 asciidoctor {
+    configurations 'asciidoctorExtensions'
+
     sourceDir = file('docs')
     sources {
         include 'index.adoc'
-    }     
+    }
+    baseDirFollowsSourceFile()
     outputDir = file('build/generated-docs')
     attributes = ['project-version'                          : "$version",
                   'dynamic-include-display-view-source'      : 'true',
@@ -34,7 +41,7 @@ asciidoctor {
         mavenCentral()
     }
     dependencies {
-        asciidoctor 'fr.jmini.asciidoctorj:dynamic-include:2.1.0' // <1>
+        asciidoctorExtensions 'fr.jmini.asciidoctorj:dynamic-include:2.1.0' // <1>
     }
 }
 // end::task[]
