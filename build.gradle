@@ -11,7 +11,7 @@ plugins {
     id 'java'
     id 'maven-publish'
     id 'signing'
-    id 'org.asciidoctor.convert' version '2.4.0'
+    id 'org.asciidoctor.jvm.convert' version '3.3.0'
     id 'org.ajoberstar.git-publish' version '3.0.0'
     id 'com.diffplug.spotless' version '5.1.1'
     id 'de.marcphilipp.nexus-publish' version '0.3.0'
@@ -124,13 +124,19 @@ def buildDate() {
     return new Date().format('yyyy-MM-dd')
 }
 
+configurations {
+    asciidoctorExtensions
+}
+
 asciidoctorj {
     version = "$asciidoctorjVersion"
 }
 
 asciidoctor {
+    configurations 'asciidoctorExtensions'
     sourceDir = file('src/docs/asciidoc')
-    outputDir = file('build/docs')
+    baseDirFollowsSourceFile()
+    outputDir = file('build/docs/html5')
     resources {
         from('src/docs/asciidoc') {
             include '*.png'
@@ -152,7 +158,7 @@ asciidoctor {
         mavenCentral()
     }
     dependencies {
-        asciidoctor "fr.jmini.asciidoctorj:git-link:3.2.1"
+        asciidoctorExtensions 'fr.jmini.asciidoctorj:git-link:3.2.1'
     }
 }
 
