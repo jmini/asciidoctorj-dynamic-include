@@ -149,6 +149,9 @@ public class DynamicIncludeProcessorTest {
         String otherLinkMutiple = DynamicIncludeProcessor.replaceXrefInlineLinks("See xref:other.adoc#foo[link 1] and xref:other.adoc#bar[link 2] for more info", list, dir, page1, dir, true);
         assertThat(otherLinkMutiple).isEqualTo("See xref:#foo[link 1] and xref:#bar[link 2] for more info");
 
+        String otherNoHashLink = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:other.adoc[valuable] link", list, dir, page1, dir, true);
+        assertThat(otherNoHashLink).isEqualTo("Some xref:#_other_page[valuable] link");
+
         String internalLink = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some xref:#test[internal] link", list, dir, page1, dir, true);
         assertThat(internalLink).isEqualTo("Some xref:#test[internal] link");
 
