@@ -402,6 +402,9 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                     if (hashPosition > -1) {
                         fileName = target.substring(0, hashPosition);
                         anchor = target.substring(hashPosition + 1);
+                    } else if (target.matches(".*\\.[a-z]+")) {
+                        fileName = target;
+                        anchor = null;
                     } else {
                         fileName = null;
                         anchor = target;
@@ -481,7 +484,9 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             sb.append("xref:");
             if (holder.getFile() != null) {
                 sb.append(holder.getFile());
-                sb.append("#");
+                if (holder.getAnchor() != null) {
+                    sb.append("#");
+                }
             }
             if (holder.getAnchor() != null) {
                 sb.append(holder.getAnchor());
