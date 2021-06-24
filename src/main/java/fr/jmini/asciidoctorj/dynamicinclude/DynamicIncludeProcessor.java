@@ -446,9 +446,9 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             } else {
                 newFileName = "";
             }
-            if (findFile.isPresent() && holder.getAnchor()
+            if (findFile.isPresent() && (holder.getAnchor() == null || holder.getAnchor()
                     .trim()
-                    .isEmpty()) {
+                    .isEmpty())) {
                 newAnchor = findFile.get()
                         .getTitleId();
             }
