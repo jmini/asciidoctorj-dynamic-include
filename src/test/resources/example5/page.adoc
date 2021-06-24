@@ -1,0 +1,9 @@
+= Page
+
+== Foo
+
+Foo
+
+== Bar
+
+Bar
