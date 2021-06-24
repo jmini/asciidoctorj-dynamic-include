@@ -184,8 +184,9 @@ public class ExampleTest {
         Path exampleFolder = Paths.get("src/test/resources/" + folder)
                 .toAbsolutePath();
         Path contentFile = exampleFolder.resolve(fileName + ".adoc");
+        Path expectedFile = exampleFolder.resolve(fileName + ".html");
         String content = new String(Files.readAllBytes(contentFile), StandardCharsets.UTF_8);
-        String expected = new String(Files.readAllBytes(exampleFolder.resolve(fileName + ".html")), StandardCharsets.UTF_8);
+        String expected = new String(Files.readAllBytes(expectedFile), StandardCharsets.UTF_8);
 
         Asciidoctor asciidoctor = Factory.create();
         InMemoryLogHanlder logHandler = new InMemoryLogHanlder();
@@ -210,11 +211,12 @@ public class ExampleTest {
         String html;
         if (asFile) {
             asciidoctor.convertFile(contentFile.toFile(), optionsBuilder);
-            html = new String(Files.readAllBytes(exampleFolder.resolve(fileName + ".html")), StandardCharsets.UTF_8);
+            html = new String(Files.readAllBytes(expectedFile), StandardCharsets.UTF_8);
         } else {
             html = asciidoctor.convert(content, optionsBuilder);
         }
 
+        Files.write(expectedFile, html.getBytes(StandardCharsets.UTF_8));
         assertThat(html).isEqualTo(expected);
 
         return logHandler.getLogs();

@@ -2,6 +2,14 @@
 
 This is chapter 4.
 
+Link to <<../page.adoc#foo, FOO>>
+
+Link to xref:../page.adoc#bar[BAR]
+
+Link to xref:../../example4/index.adoc[Example 4]
+
+Link to xref:../page.adoc#bar[bar]
+
 == Lorem
 
 Lorem

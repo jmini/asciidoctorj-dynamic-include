@@ -345,7 +345,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             sb.append(holderToAsciiDoc(replacedHolder));
 
             startAt = holder.getEndIndex();
-            find = findNextXrefDoubleAngledBracket(content, startAt);
+            find = findFunction.apply(content, startAt);
         }
 
         if (startAt < content.length()) {
