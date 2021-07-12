@@ -154,6 +154,12 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
             StringBuilder sb = new StringBuilder();
 
+            // Add a comment line at the top of the included document, to stay compatible with all asciidoctor versions.
+            // Workaround explained here: https://github.com/asciidoctor/asciidoctor/issues/3875
+            sb.append("//content of " + path + "\n");
+            sb.append("\n");
+            lineNumber = lineNumber - 2;
+
             if (displayViewSourceLink) {
                 String viewSourceUrl = replacePlaceholders(viewSourceLinkPattern, path, (String k) -> getDocumentAttribute(document, k));
 
