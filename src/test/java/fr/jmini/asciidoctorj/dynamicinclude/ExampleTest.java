@@ -186,7 +186,7 @@ public class ExampleTest {
         Path contentFile = exampleFolder.resolve(fileName + ".adoc");
         Path expectedFile = exampleFolder.resolve(fileName + ".html");
         String content = new String(Files.readAllBytes(contentFile), StandardCharsets.UTF_8);
-        String expected = new String(Files.readAllBytes(expectedFile), StandardCharsets.UTF_8);
+        String expectedContent = new String(Files.readAllBytes(expectedFile), StandardCharsets.UTF_8);
 
         Asciidoctor asciidoctor = Factory.create();
         InMemoryLogHanlder logHandler = new InMemoryLogHanlder();
@@ -208,18 +208,30 @@ public class ExampleTest {
                 .baseDir(exampleFolder.toFile())
                 .docType("book")
                 .safe(SafeMode.UNSAFE);
-        String html;
+        String html, actual, expected;
         if (asFile) {
             asciidoctor.convertFile(contentFile.toFile(), optionsBuilder);
             html = new String(Files.readAllBytes(expectedFile), StandardCharsets.UTF_8);
+            actual = contentAfterBody(html);
+            expected = contentAfterBody(expectedContent);
         } else {
             html = asciidoctor.convert(content, optionsBuilder);
+            actual = html;
+            expected = expectedContent;
         }
 
         Files.write(expectedFile, html.getBytes(StandardCharsets.UTF_8));
-        assertThat(html).isEqualTo(expected);
+        assertThat(actual).isEqualTo(expected);
 
         return logHandler.getLogs();
+    }
+
+    private String contentAfterBody(String html) {
+        int i = html.indexOf("<body");
+        if (i > 0) {
+            return html.substring(i);
+        }
+        throw new IllegalStateException("Could not find '<body' in the content");
     }
 
     static String readFile(Path file) {
