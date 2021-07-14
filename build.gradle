@@ -32,8 +32,8 @@ java {
 }
 
 repositories {
-    jcenter()
     mavenCentral()
+    jcenter()
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -61,10 +61,12 @@ test {
     useJUnitPlatform()
 }
 
+def strictAsciidoctorjVersion = hasProperty('asciidoctorjVersion') ? '!!' + getProperty('asciidoctorjVersion') : ''
+
 dependencies {
     implementation "fr.jmini.utils:path-order:$pathorderVersion"
     implementation "fr.jmini.utils:substring-finder:$substringFinder"
-    implementation "org.asciidoctor:asciidoctorj:$asciidoctorjVersion"
+    implementation "org.asciidoctor:asciidoctorj:${asciidoctorjVersion}${strictAsciidoctorjVersion}"
     implementation "org.yaml:snakeyaml:$snakeyamlVersion"
 
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
@@ -132,7 +134,7 @@ configurations {
 }
 
 asciidoctorj {
-    version = "$asciidoctorjVersion"
+    version = '2.2.0'
 }
 
 asciidoctor {
