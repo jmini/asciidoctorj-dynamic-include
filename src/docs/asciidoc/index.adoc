@@ -88,15 +88,9 @@ This allows to have a tree structure like this:
 
 == AsciidoctorJ version
 
-The latest version of this extension is built and tested with version `{asciidoctorj-version}` of `org.asciidoctor:asciidoctorj`.
-If you are using an older version of AsciidoctorJ, you can use an older version of this plugin:
+This extension is compatible with `org.asciidoctor:asciidoctorj` in range `{asciidoctorj-version}`.
 
-[cols="2*^"]
-|===
-| Asciidoctorj version | {project-name} version
-| `1.6.x` | `1.0.1`
-| `2.0.x` | `1.1.0`
-|===
+The continuous integration server runs the test suite with different AsciidoctorJ versions within this range.
 
 == Usage examples
 
@@ -136,6 +130,16 @@ Command to build the sources locally:
 
 ----
 ./gradlew build
+----
+
+The AsciidoctorJ version can be controlled with the `asciidoctorjVersion` project property.
+The property will influence the strict version in the dependency definition.
+This is used to test the extension against a specific AsciidoctorJ version.
+
+Usage example:
+
+----
+./gradlew build -PasciidoctorjVersion=2.2.0
 ----
 
 Command to deploy to your local maven repository:
