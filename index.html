@@ -443,24 +443,22 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <h1>AsciidoctorJ dynamic-include</h1>
 <div class="details">
 <span id="author" class="author">Jeremie Bresson</span><br>
-<span id="revnumber">version 2.1.0,</span>
-<span id="revdate">2020-02-18</span>
+<span id="revnumber">version 2.1.1-SNAPSHOT,</span>
+<span id="revdate">2021-10-21</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#urls">URLs</a></li>
-<li><a href="#description">Description</a>
-<ul class="sectlevel2">
+<li><a href="#description">Description</a></li>
 <li><a href="#asciidoctorj-version">AsciidoctorJ version</a></li>
-</ul>
-</li>
 <li><a href="#usage-examples">Usage examples</a>
 <ul class="sectlevel2">
 <li><a href="#integration-in-a-maven-build">Integration in a maven build</a></li>
 <li><a href="#integration-in-a-gradle-build">Integration in a gradle build</a></li>
 </ul>
 </li>
+<li><a href="#download">Download</a></li>
 <li><a href="#source-code">Source Code</a>
 <ul class="sectlevel2">
 <li><a href="#build">Build</a>
@@ -518,46 +516,90 @@ Do you want to improve this page? Please <a href="https://github.com/jmini/ascii
 <h2 id="description"><a class="anchor" href="#description"></a>Description</h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>AsciidoctorJ dynamic-include is an extension for AsciidoctorJ that allow you to include files using globbing pattern.</p>
+<p>AsciidoctorJ dynamic-include is an extension for AsciidoctorJ that allows to include files using a globbing pattern.</p>
 </div>
-<div class="admonitionblock note">
-<table>
-<tr>
-<td class="icon">
-<i class="fa icon-note" title="Note"></i>
-</td>
-<td class="content">
-TODO describe the extension configuration.
-</td>
-</tr>
-</table>
-</div>
-<div class="sect2">
-<h3 id="asciidoctorj-version"><a class="anchor" href="#asciidoctorj-version"></a>AsciidoctorJ version</h3>
 <div class="paragraph">
-<p>The latest version of this extension is built and tested with version <code>2.2.0</code> of <code>org.asciidoctor:asciidoctorj</code>.
-If you are using an older version of AsciidoctorJ, you can use an older version of this plugin:</p>
+<p>More concretely instead of including different files one by one:</p>
 </div>
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 50%;">
-<col style="width: 50%;">
-</colgroup>
-<tbody>
-<tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock">Asciidoctorj version</p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock">AsciidoctorJ dynamic-include version</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>1.6.x</code></p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>1.0.1</code></p></td>
-</tr>
-<tr>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>2.0.x</code></p></td>
-<td class="tableblock halign-center valign-top"><p class="tableblock"><code>1.1.0</code></p></td>
-</tr>
-</tbody>
-</table>
+<div class="listingblock">
+<div class="title">Listing 1. traditional way to include multiple files into a document</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="adoc">= My book
+
+include::content/chapter01.adoc[]
+
+include::content/chapter02.adoc[]
+
+include::content/chapter03.adoc[]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>It is possible to include them all with a single include:</p>
+</div>
+<div class="listingblock">
+<div class="title">Listing 2. include of files using the dynamic-include processor</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="adoc">= My book
+
+include::dynamic:content/*.adoc[]</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>To control the order of the included files, the approach using <code>pages.yaml</code> described in the project <a href="https://jmini.github.io/path-order/">path-order</a> can be used.</p>
+</div>
+<div class="paragraph">
+<p>The processor will take care of the title levels.</p>
+</div>
+<div class="paragraph">
+<p>Each file can start with a level 2: <code>== My title</code></p>
+</div>
+<div class="paragraph">
+<p>Meaning that they are valid documents individually.</p>
+</div>
+<div class="paragraph">
+<p>When the pages are combined using the dynamic-include, the processor will add the corresponding <code>:leveloffset:</code> necessary to have a consistent level.
+A sub-folder will correspond to a shift of one in the hierarchy, with a special processing of the <code>index.adoc</code> page.</p>
+</div>
+<div class="paragraph">
+<p>This allows to have a tree structure like this:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>├── chapter-one
+│   ├── content-section
+│   │   ├── content-1.adoc
+│   │   ├── content-2.adoc
+│   │   └── index.adoc
+│   ├── end-section
+│   │   └── index.adoc
+│   ├── index.adoc
+│   ├── intro.adoc
+│   └── pages.yaml
+├── chapter-three
+│   ├── index.adoc
+│   ├── page1.adoc
+│   └── page2.adoc
+├── chapter-two
+│   ├── index.adoc
+│   ├── info.adoc
+│   ├── pages.yaml
+│   ├── section-1.adoc
+│   └── section-a.adoc
+├── index.adoc
+├── index.html
+└── pages.yaml</pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="asciidoctorj-version"><a class="anchor" href="#asciidoctorj-version"></a>AsciidoctorJ version</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>This extension is compatible with <code>org.asciidoctor:asciidoctorj</code> in range <code>[2.0.0, 3.0.0[</code>.</p>
+</div>
+<div class="paragraph">
+<p>The continuous integration server runs the test suite with different AsciidoctorJ versions within this range.</p>
 </div>
 </div>
 </div>
@@ -622,13 +664,16 @@ Your <code>&lt;build&gt;</code> section could looks like this:</p>
 <p>The <code>fr.jmini.asciidoctorj:dynamic-include</code> jar can be declared as dependency of the <code>asciidoctor</code> task:</p>
 </div>
 <div class="listingblock">
-<div class="title">Listing 1. Configuration of the asciidoctor task in a gradle build</div>
+<div class="title">Listing 3. Configuration of the asciidoctor task in a gradle build</div>
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="gralde">asciidoctor {
+    configurations 'asciidoctorExtensions'
+
     sourceDir = file('docs')
     sources {
         include 'index.adoc'
     }
+    baseDirFollowsSourceFile()
     outputDir = file('build/generated-docs')
     attributes = ['project-version'                          : &quot;$version&quot;,
                   'dynamic-include-display-view-source'      : 'true',
@@ -644,7 +689,7 @@ Your <code>&lt;build&gt;</code> section could looks like this:</p>
         mavenCentral()
     }
     dependencies {
-        asciidoctor 'fr.jmini.asciidoctorj:dynamic-include:2.1.0' <i class="conum" data-value="1"></i><b>(1)</b>
+        asciidoctorExtensions 'fr.jmini.asciidoctorj:dynamic-include:2.1.0' <i class="conum" data-value="1"></i><b>(1)</b>
     }
 }</code></pre>
 </div>
@@ -659,6 +704,24 @@ Your <code>&lt;build&gt;</code> section could looks like this:</p>
 </div>
 <div class="paragraph">
 <p>For a complete example, see: <a href="https://github.com/jmini/asciidoctorj-dynamic-include/blob/master/usage/gradle-example/build.gradle">build.gradle</a></p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="download"><a class="anchor" href="#download"></a>Download</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The library is hosted on maven central.</p>
+</div>
+<div class="listingblock">
+<div class="title">Listing 4. Maven coordinates of the library</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;dependency&gt;</span>
+  <span class="tag">&lt;groupId&gt;</span>fr.jmini.asciidoctorj<span class="tag">&lt;/groupId&gt;</span>
+  <span class="tag">&lt;artifactId&gt;</span>dynamic-include<span class="tag">&lt;/artifactId&gt;</span>
+  <span class="tag">&lt;version&gt;</span>2.1.0<span class="tag">&lt;/version&gt;</span>
+<span class="tag">&lt;/dependency&gt;</span></code></pre>
 </div>
 </div>
 </div>
@@ -680,6 +743,19 @@ Your <code>&lt;build&gt;</code> section could looks like this:</p>
 <div class="listingblock">
 <div class="content">
 <pre>./gradlew build</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The AsciidoctorJ version can be controlled with the <code>asciidoctorjVersion</code> project property.
+The property will influence the strict version in the dependency definition.
+This is used to test the extension against a specific AsciidoctorJ version.</p>
+</div>
+<div class="paragraph">
+<p>Usage example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>./gradlew build -PasciidoctorjVersion=2.2.0</pre>
 </div>
 </div>
 <div class="paragraph">
@@ -781,8 +857,8 @@ ssh-add ~/.ssh/id_rsa</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Version 2.1.0<br>
-Last updated 2019-09-25 15:24:16 +0200
+Version 2.1.1-SNAPSHOT<br>
+Last updated 2021-10-21 12:05:04 +0200
 </div>
 </div>
 <style>
