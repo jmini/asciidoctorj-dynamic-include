@@ -134,7 +134,7 @@ configurations {
 }
 
 asciidoctorj {
-    version = '2.2.0'
+    version = '2.5.2'
 }
 
 asciidoctor {
@@ -164,7 +164,7 @@ asciidoctor {
         mavenCentral()
     }
     dependencies {
-        asciidoctorExtensions 'fr.jmini.asciidoctorj:git-link:3.2.1'
+        asciidoctorExtensions 'fr.jmini.asciidoctorj:git-link:3.2.2'
     }
 }
 
