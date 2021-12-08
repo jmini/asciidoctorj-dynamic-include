@@ -1,0 +1,7 @@
+:idprefix: =
+:idseparator: -
+
+== Example 9
+
+include::dynamic:pages/*.adoc[]
+

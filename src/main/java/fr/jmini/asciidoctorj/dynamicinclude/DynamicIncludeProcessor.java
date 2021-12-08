@@ -7,8 +7,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -91,8 +93,9 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 .toString();
         String idseparator = document.getAttribute("idseparator", "_")
                 .toString();
+        List<String> globalExistingAnchors = new ArrayList<>();
         List<FileHolder> list = sortedFiles.stream()
-                .map(p -> createFileHolder(dir, p, idprefix, idseparator, levelOffsetShifting))
+                .map(p -> createFileHolder(dir, p, idprefix, idseparator, levelOffsetShifting, globalExistingAnchors))
                 .collect(Collectors.toList());
 
         if (logfile != null) {
@@ -132,19 +135,21 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
         for (int i = list.size() - 1; i >= 0; i--) {
             FileHolder item = list.get(i);
+            TitleHolder title = item.getFirstTitle();
             Path path = item.getPath();
             File file = path.toFile();
 
             boolean previousTitleEquals = false;
             if (i > 0) {
                 FileHolder previousItem = list.get(i - 1);
-                previousTitleEquals = (item.getTitleType() == TitleType.PRESENT)
-                        && Objects.equals(previousItem.getTitleType(), item.getTitleType())
-                        && Objects.equals(previousItem.getTitleLevel(), item.getTitleLevel())
-                        && Objects.equals(previousItem.getTitle(), item.getTitle());
+                TitleHolder previousTitle = previousItem.getFirstTitle();
+                previousTitleEquals = (title.getTitleType() == TitleType.PRESENT)
+                        && Objects.equals(previousTitle.getTitleType(), title.getTitleType())
+                        && Objects.equals(previousTitle.getTitleLevel(), title.getTitleLevel())
+                        && Objects.equals(previousTitle.getTitle(), title.getTitle());
             }
 
-            int splitIndex = (previousTitleEquals) ? item.getTitleEnd() : item.getTitleStart();
+            int splitIndex = (previousTitleEquals) ? title.getTitleEnd() : title.getTitleStart();
             String header = item.getContent()
                     .substring(0, splitIndex);
             int lineNumber = countLines(header);
@@ -173,11 +178,11 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 lineNumber = lineNumber - 3;
             }
             if (!previousTitleEquals) {
-                if (item.getTitleType() == TitleType.PRESENT) {
+                if (title.getTitleType() == TitleType.PRESENT) {
                     sb.append("\n");
                     lineNumber = lineNumber - 1;
                 } else {
-                    sb.append("[#" + item.getTitleId() + "]\n");
+                    sb.append("[#" + title.getTitleId() + "]\n");
                     lineNumber = lineNumber - 1;
                 }
             }
@@ -191,8 +196,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             }
 
             String content = sb.toString();
-            content = replaceXrefDoubleAngledBracketLinks(content, list, dir, path, root, externalXrefAsText);
-            content = replaceXrefInlineLinks(content, list, dir, path, root, externalXrefAsText);
+            content = replaceXrefDoubleAngledBracketLinks(content, list, dir, item, root, externalXrefAsText);
+            content = replaceXrefInlineLinks(content, list, dir, item, root, externalXrefAsText);
 
             reader.push_include(content, file.getName(), path.toString(), lineNumber, attributes);
         }
@@ -259,7 +264,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return document.hasAttribute(documentKey);
     }
 
-    public static FileHolder createFileHolder(Path dir, Path path, String idprefix, String idseparator, int levelOffsetShifting) {
+    public static FileHolder createFileHolder(Path dir, Path path, String idprefix, String idseparator, int levelOffsetShifting, List<String> globalExistingAnchors) {
         String key = dir.relativize(path)
                 .toString()
                 .replace('\\', '/');
@@ -271,38 +276,67 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
         String content = readFile(path);
 
-        TitleType titleType;
-        int titleLevel;
-        String title;
-        String titleId;
-        int titleStart;
-        int titleEnd;
+        TitleHolder firstTitle = null;
+        List<String> localExistingAnchors = new ArrayList<>();
+        Map<String, String> titleAnchorMap = new HashMap<>();
         Matcher titleMatcher = TITLE_REGEX.matcher(content);
-        if (titleMatcher.find()) {
-            titleType = titleMatcher.group(1)
-                    .isEmpty() ? TitleType.PRESENT : TitleType.COMMENTED;
-            titleLevel = titleMatcher.group(2)
-                    .length();
-            title = titleMatcher.group(3)
-                    .trim();
-            titleId = computeTitleId(title, idprefix, idseparator);
-            titleStart = titleMatcher.start();
-            titleEnd = titleMatcher.end();
-        } else {
-            titleType = TitleType.ABSENT;
-            titleLevel = 0;
-            title = null;
-            titleId = computeTitleId(key, idprefix, idseparator);
-            titleStart = 0;
-            titleEnd = 0;
+        while (titleMatcher.find()) {
+            TitleHolder titleHolder = toTitleHolder(idprefix, idseparator, localExistingAnchors, titleMatcher);
+            if (firstTitle == null) {
+                firstTitle = titleHolder;
+            }
+            if (titleHolder.getTitleType() == TitleType.PRESENT) {
+                localExistingAnchors.add(titleHolder.getTitleId());
+                if (!titleAnchorMap.containsKey(titleHolder.getTitle())) {
+                    titleAnchorMap.put(titleHolder.getTitle(), titleHolder.getTitleId());
+                }
+            }
         }
 
-        int offset = calculateOffset(dir, path, nameWithoutSuffix, titleLevel, levelOffsetShifting);
+        if (firstTitle == null) {
+            firstTitle = new TitleHolder(TitleType.ABSENT, 0, null, computeTitleId(key, idprefix, idseparator, Collections.emptyList()), 0, 0);
+        }
 
-        return new FileHolder(path, key, nameWithoutSuffix, nameSuffix, content, titleType, title, titleLevel, offset, titleId, titleStart, titleEnd);
+        int offset = calculateOffset(dir, path, nameWithoutSuffix, firstTitle.getTitleLevel(), levelOffsetShifting);
+
+        Map<String, String> anchorShift = new HashMap<>();
+        for (String anchor : localExistingAnchors) {
+            if (!globalExistingAnchors.contains(anchor)) {
+                globalExistingAnchors.add(anchor);
+            } else {
+                String anchorWithoutSuffix = stripAnchorSuffix(anchor, idseparator);
+                String shiftedAnchor = shiftAnchor("(shift to global anchor '" + anchor + "')", idseparator, globalExistingAnchors, anchorWithoutSuffix);
+                anchorShift.put(anchor, shiftedAnchor);
+                globalExistingAnchors.add(shiftedAnchor);
+            }
+        }
+
+        return new FileHolder(path, key, nameWithoutSuffix, nameSuffix, content, firstTitle, offset, titleAnchorMap, anchorShift);
     }
 
-    public static String computeTitleId(String text, String idprefix, String idseparator) {
+    static String stripAnchorSuffix(String anchor, String idseparator) {
+        Pattern pattern = Pattern.compile("(.+)" + idseparator + "[0-9]+");
+        Matcher matcher = pattern.matcher(anchor);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return anchor;
+    }
+
+    private static TitleHolder toTitleHolder(String idprefix, String idseparator, List<String> localExistingAnchors, Matcher titleMatcher) {
+        TitleType titleType = titleMatcher.group(1)
+                .isEmpty() ? TitleType.PRESENT : TitleType.COMMENTED;
+        int titleLevel = titleMatcher.group(2)
+                .length();
+        String title = titleMatcher.group(3)
+                .trim();
+        String titleId = computeTitleId(title, idprefix, idseparator, localExistingAnchors);
+        int titleStart = titleMatcher.start();
+        int titleEnd = titleMatcher.end();
+        return new TitleHolder(titleType, titleLevel, title, titleId, titleStart, titleEnd);
+    }
+
+    public static String computeTitleId(String text, String idprefix, String idseparator, List<String> localExistingAnchors) {
         StringBuilder sb = new StringBuilder();
         if (idprefix != null) {
             sb.append(idprefix);
@@ -316,7 +350,21 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             anchor = anchor.replaceAll("\\s+", idseparator);
         }
         sb.append(anchor);
-        return sb.toString();
+        String candidate = sb.toString();
+        if (!localExistingAnchors.contains(candidate)) {
+            return candidate;
+        }
+        return shiftAnchor("(computeTitleId for '" + text + "')", idseparator, localExistingAnchors, candidate);
+    }
+
+    private static String shiftAnchor(String helpContext, String idseparator, List<String> existingAnchors, String anchorWithoutSuffix) {
+        for (int i = 2; i < 1000; i++) {
+            String newCandidate = anchorWithoutSuffix + idseparator + i;
+            if (!existingAnchors.contains(newCandidate)) {
+                return newCandidate;
+            }
+        }
+        throw new IllegalStateException("Could not compute the anchor " + helpContext);
     }
 
     static int calculateOffset(Path dir, Path path, String nameWithoutSuffix, int titleLevel, int levelOffsetShifting) {
@@ -328,15 +376,15 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return headerLevel - titleLevel;
     }
 
-    public static String replaceXrefDoubleAngledBracketLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot, boolean externalXrefAsText) {
+    public static String replaceXrefDoubleAngledBracketLinks(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText) {
         return replaceXref(content, list, dir, currentPath, currentRoot, externalXrefAsText, DynamicIncludeProcessor::findNextXrefDoubleAngledBracket);
     }
 
-    public static String replaceXrefInlineLinks(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot, boolean externalXrefAsText) {
+    public static String replaceXrefInlineLinks(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText) {
         return replaceXref(content, list, dir, currentPath, currentRoot, externalXrefAsText, DynamicIncludeProcessor::findNextXrefInline);
     }
 
-    private static String replaceXref(String content, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot, boolean externalXrefAsText, BiFunction<String, Integer, Optional<XrefHolder>> findFunction) {
+    private static String replaceXref(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText, BiFunction<String, Integer, Optional<XrefHolder>> findFunction) {
         if (list.isEmpty()) {
             return content;
         }
@@ -429,17 +477,20 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return Optional.empty();
     }
 
-    private static XrefHolder replaceHolder(XrefHolder holder, List<FileHolder> list, Path dir, Path currentPath, Path currentRoot, boolean externalXrefAsText) {
+    private static XrefHolder replaceHolder(XrefHolder holder, List<FileHolder> list, Path dir, FileHolder currentFile, Path currentRoot, boolean externalXrefAsText) {
         String newFileName;
-        String newAnchor = null;
+        String newAnchor;
         String fileName = holder.getFile();
         XrefHolderType type = holder.getType();
         if (fileName != null) {
             Path file;
             if (fileName.startsWith("{root}")) {
                 file = currentRoot.resolve(fileName.substring(6));
+            } else if (fileName.isEmpty()) {
+                file = currentFile.getPath();
             } else {
-                file = currentPath.getParent()
+                file = currentFile.getPath()
+                        .getParent()
                         .resolve(fileName);
             }
             Optional<FileHolder> findFile = findByFile(list, file);
@@ -450,22 +501,49 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 newFileName = dir.relativize(file)
                         .toString()
                         .replace('\\', '/');
+                newAnchor = holder.getAnchor();
+            } else {
+                newFileName = "";
+                FileHolder fileHolder = findFile.get();
+                newAnchor = computeNewAnchor(holder, fileHolder);
+            }
+        } else {
+            newAnchor = computeNewAnchor(holder, currentFile);
+            if (Objects.equals(newAnchor, holder.getAnchor())) {
+                // no changes to the anchor, keep it unchanged:
+                newFileName = null;
             } else {
                 newFileName = "";
             }
-            if (findFile.isPresent() && (holder.getAnchor() == null || holder.getAnchor()
-                    .trim()
-                    .isEmpty())) {
-                newAnchor = findFile.get()
-                        .getTitleId();
-            }
-        } else {
-            newFileName = null;
-        }
-        if (newAnchor == null) {
-            newAnchor = holder.getAnchor();
         }
         return new XrefHolder(newFileName, newAnchor, holder.getText(), type, -1, -1);
+    }
+
+    private static String computeNewAnchor(XrefHolder holder, FileHolder fileHolder) {
+        if (holder.getAnchor() == null || holder.getAnchor()
+                .trim()
+                .isEmpty()) {
+            return fileHolder.getFirstTitle()
+                    .getTitleId();
+        } else {
+            String oldAnchor = holder.getAnchor()
+                    .trim();
+            String anchor;
+            if (fileHolder.getTitleAnchorMap()
+                    .containsKey(oldAnchor)) {
+                anchor = fileHolder.getTitleAnchorMap()
+                        .get(oldAnchor);
+            } else {
+                anchor = oldAnchor;
+            }
+            if (fileHolder.getAnchorShift()
+                    .containsKey(anchor)) {
+                return fileHolder.getAnchorShift()
+                        .get(anchor);
+            } else {
+                return anchor;
+            }
+        }
     }
 
     public static String holderToAsciiDoc(XrefHolder holder) {

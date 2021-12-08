@@ -172,6 +172,12 @@ class ExampleTest {
         assertThat(logs).isEmpty();
     }
 
+    @Test
+    void testExample9() throws Exception {
+        List<LogRecord> logs = runTest("example9", "index");
+        assertThat(logs).isEmpty();
+    }
+
     private List<LogRecord> runTest(String folder, String fileName) throws IOException, URISyntaxException {
         return runTest(folder, fileName, null, false);
     }
