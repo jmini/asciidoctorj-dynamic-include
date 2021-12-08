@@ -1,6 +1,7 @@
 package fr.jmini.asciidoctorj.dynamicinclude;
 
 import java.nio.file.Path;
+import java.util.Map;
 
 public class FileHolder {
 
@@ -9,27 +10,21 @@ public class FileHolder {
     private String nameSuffix;
     private String key;
     private String content;
-    private TitleType titleType;
-    private String title;
-    private int titleLevel;
+    private TitleHolder firstTitle;
     private int levelOffset;
-    private String titleId;
-    private int titleStart;
-    private int titleEnd;
+    private Map<String, String> titleAnchorMap;
+    private Map<String, String> anchorShift;
 
-    public FileHolder(Path path, String key, String nameWithoutSuffix, String nameSuffix, String content, TitleType titleType, String title, int titleLevel, int levelOffset, String titleId, int titleStart, int titleEnd) {
+    public FileHolder(Path path, String key, String nameWithoutSuffix, String nameSuffix, String content, TitleHolder firstTitle, int levelOffset, Map<String, String> titleAnchorMap, Map<String, String> anchorShift) {
         this.path = path;
         this.key = key;
         this.nameWithoutSuffix = nameWithoutSuffix;
         this.nameSuffix = nameSuffix;
         this.content = content;
-        this.titleType = titleType;
-        this.title = title;
-        this.titleLevel = titleLevel;
+        this.firstTitle = firstTitle;
         this.levelOffset = levelOffset;
-        this.titleId = titleId;
-        this.titleStart = titleStart;
-        this.titleEnd = titleEnd;
+        this.titleAnchorMap = titleAnchorMap;
+        this.anchorShift = anchorShift;
     }
 
     public Path getPath() {
@@ -52,32 +47,20 @@ public class FileHolder {
         return content;
     }
 
-    public TitleType getTitleType() {
-        return titleType;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public int getTitleLevel() {
-        return titleLevel;
+    public TitleHolder getFirstTitle() {
+        return firstTitle;
     }
 
     public int getLevelOffset() {
         return levelOffset;
     }
 
-    public String getTitleId() {
-        return titleId;
+    public Map<String, String> getTitleAnchorMap() {
+        return titleAnchorMap;
     }
 
-    public int getTitleStart() {
-        return titleStart;
-    }
-
-    public int getTitleEnd() {
-        return titleEnd;
+    public Map<String, String> getAnchorShift() {
+        return anchorShift;
     }
 
 }

@@ -1,0 +1,29 @@
+:idprefix: =
+:idseparator: -
+
+== Page B
+
+* link to <<My title, My title B>>
+* link to <<pageA.adoc#=my-title, title 1>>
+* link to <<pageA.adoc#=my-title-2, title 2>>
+* link to <<pageB.adoc#=my-title, title 8>>
+* link to <<pageB.adoc#=my-title-2, title 9>>
+
+
+Foo
+
+=== Section 8
+
+Lorem 8
+
+==== My title
+
+Ipsum 8
+
+=== Section 9
+
+Lorem 9
+
+==== My title
+
+Ipsum 9
