@@ -34,7 +34,7 @@ import fr.jmini.utils.substringfinder.SubstringFinder;
 public class DynamicIncludeProcessor extends IncludeProcessor {
     private static final String PREFIX = "dynamic:";
 
-    private static final Pattern TITLE_REGEX = Pattern.compile("(\\/?\\/? *)(={1,5})(.+)");
+    private static final Pattern TITLE_REGEX = Pattern.compile("^(\\/?\\/? *)(={1,5})(.+)", Pattern.MULTILINE);
 
     private static final SubstringFinder DOUBLE_ANGLED_BRACKET_FINDER = SubstringFinder.define("<<", ">>");
     private static final SubstringFinder SINGLE_BRACKET_FINDER = SubstringFinder.define("[", "]");
@@ -72,11 +72,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         int levelOffsetShifting = convertLevelOffsetShifting(logger, levelOffsetShiftingText);
 
         boolean displayViewSourceLink = hasKey(document, attributes, "display-view-source", "dynamic-include-display-view-source");
-        String viewSourceLinkPattern = readKey(document, attributes, "view-source-link-pattern", "dynamic-include-view-source-link-pattern");
-        String viewSourceLinkText = readKey(document, attributes, "view-source-link-text", "dynamic-include-view-source-link-text");
-        if (viewSourceLinkText == null) {
-            viewSourceLinkText = "view source";
-        }
+        String viewSourceLinkPattern = readKey(document, attributes, "view-source-link-pattern", "dynamic-include-view-source-link-pattern", "#");
+        String viewSourceLinkText = readKey(document, attributes, "view-source-link-text", "dynamic-include-view-source-link-text", "view source");
 
         Path root;
         if (document.hasAttribute("root")) {
@@ -224,6 +221,10 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
     }
 
     private String readKey(Document document, Map<String, Object> attributes, String includeKey, String documentKey) {
+        return readKey(document, attributes, includeKey, documentKey, null);
+    }
+
+    private String readKey(Document document, Map<String, Object> attributes, String includeKey, String documentKey, String defaultValue) {
         if (attributes.containsKey(includeKey)) {
             return attributes.get(includeKey)
                     .toString();
@@ -233,7 +234,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 return documentAttribute.get();
             }
         }
-        return null;
+        return defaultValue;
     }
 
     private static List<String> valueToList(String string) {
@@ -516,16 +517,10 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return sb.toString();
     }
 
-    private static boolean isFilePresent(List<FileHolder> list, Path file) {
-        Optional<FileHolder> find = findByFile(list, file);
-        return find.isPresent();
-    }
-
     private static Optional<FileHolder> findByFile(List<FileHolder> list, Path file) {
-        Optional<FileHolder> find = list.stream()
+        return list.stream()
                 .filter(i -> Objects.equals(file.normalize(), i.getPath()))
                 .findAny();
-        return find;
     }
 
     public static int countLines(String string) {
@@ -552,15 +547,15 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 switch (placeholderLowerCase) {
                 case "file-relative-to-git-repository":
                     Optional<String> localGitRepositoryPath = attributeGetter.apply("local-git-repository-path");
-                    appendPlaceholderValue(sb, placeholderName, localGitRepositoryPath, (folderPath) -> PathUtil.computeRelativePath(file, folderPath));
+                    appendPlaceholderValue(sb, placeholderName, localGitRepositoryPath, folderPath -> PathUtil.computeRelativePath(file, folderPath));
                     break;
                 case "file-relative-to-gradle-projectdir":
                     Optional<String> gradleProjectdir = attributeGetter.apply("gradle-projectdir");
-                    appendPlaceholderValue(sb, placeholderName, gradleProjectdir, (folderPath) -> PathUtil.computeRelativePath(file, folderPath));
+                    appendPlaceholderValue(sb, placeholderName, gradleProjectdir, folderPath -> PathUtil.computeRelativePath(file, folderPath));
                     break;
                 case "file-relative-to-gradle-rootdir":
                     Optional<String> gradleRootdir = attributeGetter.apply("gradle-rootdir");
-                    appendPlaceholderValue(sb, placeholderName, gradleRootdir, (folderPath) -> PathUtil.computeRelativePath(file, folderPath));
+                    appendPlaceholderValue(sb, placeholderName, gradleRootdir, folderPath -> PathUtil.computeRelativePath(file, folderPath));
                     break;
                 case "file-absolute-with-leading-slash":
                     String absolutePath = PathUtil.normalizePath(file.toAbsolutePath());

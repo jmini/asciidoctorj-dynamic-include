@@ -42,7 +42,7 @@ public class XrefHolder {
         return endIndex;
     }
 
-    public static enum XrefHolderType {
+    public enum XrefHolderType {
         DOUBLE_ANGLED_BRACKET, INLINE, TEXT
     }
 }

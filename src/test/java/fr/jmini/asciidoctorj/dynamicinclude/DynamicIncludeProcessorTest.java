@@ -17,13 +17,13 @@ import org.junit.jupiter.api.Test;
 
 import fr.jmini.asciidoctorj.dynamicinclude.XrefHolder.XrefHolderType;
 
-public class DynamicIncludeProcessorTest {
+class DynamicIncludeProcessorTest {
 
     @Test
     void testConvertLevelOffsetShifting() throws Exception {
         List<String> list;
         list = new ArrayList<String>();
-        assertThat(DynamicIncludeProcessor.convertLevelOffsetShifting(list::add, "0")).isEqualTo(0);
+        assertThat(DynamicIncludeProcessor.convertLevelOffsetShifting(list::add, "0")).isZero();
         assertThat(list).isEmpty();
 
         list = new ArrayList<String>();
@@ -65,7 +65,7 @@ public class DynamicIncludeProcessorTest {
         Path dir = Paths.get("dir");
 
         Path page1 = dir.resolve("folder/index.adoc");
-        assertThat(DynamicIncludeProcessor.calculateOffset(dir, page1, "index", 2, 1)).isEqualTo(0);
+        assertThat(DynamicIncludeProcessor.calculateOffset(dir, page1, "index", 2, 1)).isZero();
         assertThat(DynamicIncludeProcessor.calculateOffset(dir, page1, "index", 2, 2)).isEqualTo(1);
 
         Path page2 = dir.resolve("folder/page.adoc");
@@ -189,7 +189,7 @@ public class DynamicIncludeProcessorTest {
         assertThat(linkStartOpt).isPresent();
         XrefHolder linkStart = linkStartOpt.get();
         assertThat(linkStart.getType()).isEqualTo(XrefHolderType.DOUBLE_ANGLED_BRACKET);
-        assertThat(linkStart.getStartIndex()).isEqualTo(0);
+        assertThat(linkStart.getStartIndex()).isZero();
         assertThat(linkStart.getEndIndex()).isEqualTo(26);
         assertThat(linkStart.getFile()).isEqualTo("other.adoc");
         assertThat(linkStart.getAnchor()).isEqualTo("test");
@@ -255,7 +255,7 @@ public class DynamicIncludeProcessorTest {
         assertThat(linkStartOpt).isPresent();
         XrefHolder linkStart = linkStartOpt.get();
         assertThat(linkStart.getType()).isEqualTo(XrefHolderType.INLINE);
-        assertThat(linkStart.getStartIndex()).isEqualTo(0);
+        assertThat(linkStart.getStartIndex()).isZero();
         assertThat(linkStart.getEndIndex()).isEqualTo(27);
         assertThat(linkStart.getFile()).isEqualTo("other.adoc");
         assertThat(linkStart.getAnchor()).isEqualTo("test");
@@ -365,7 +365,7 @@ public class DynamicIncludeProcessorTest {
         FileHolder holder1 = DynamicIncludeProcessor.createFileHolder(dir, path1, "_", "_", 1);
         assertThat(holder1.getKey()).isEqualTo("example4/page-lorem.adoc");
         assertThat(holder1.getTitleType()).isEqualTo(TitleType.ABSENT);
-        assertThat(holder1.getTitleEnd()).isEqualTo(0);
+        assertThat(holder1.getTitleEnd()).isZero();
 
         Path path2 = dir.resolve("example4/page-ipsum.adoc");
         FileHolder holder2 = DynamicIncludeProcessor.createFileHolder(dir, path2, "_", "_", 1);

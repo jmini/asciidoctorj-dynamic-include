@@ -18,10 +18,10 @@ import org.asciidoctor.SafeMode;
 import org.asciidoctor.log.LogRecord;
 import org.junit.jupiter.api.Test;
 
-public class ExampleTest {
+class ExampleTest {
 
     @Test
-    public void testExample1Index() throws Exception {
+    void testExample1Index() throws Exception {
         Path logfile = Files.createTempFile("test", "log")
                 .toAbsolutePath();
 
@@ -38,7 +38,7 @@ public class ExampleTest {
     }
 
     @Test
-    public void testExample1Guide() throws Exception {
+    void testExample1Guide() throws Exception {
         Path logfile = Files.createTempFile("test", "log")
                 .toAbsolutePath();
 
@@ -55,13 +55,13 @@ public class ExampleTest {
     }
 
     @Test
-    public void testExample1OnlyPages() throws Exception {
+    void testExample1OnlyPages() throws Exception {
         List<LogRecord> logs = runTest("example1", "only-pages", null);
         assertThat(logs).isEmpty();
     }
 
     @Test
-    public void testExample1Publish() throws Exception {
+    void testExample1Publish() throws Exception {
         Path logfile = Files.createTempFile("test", "log")
                 .toAbsolutePath();
 
@@ -78,7 +78,7 @@ public class ExampleTest {
     }
 
     @Test
-    public void testExample1SubPublish() throws Exception {
+    void testExample1SubPublish() throws Exception {
         Path logfile = Files.createTempFile("test", "log")
                 .toAbsolutePath();
 
@@ -95,7 +95,7 @@ public class ExampleTest {
     }
 
     @Test
-    public void testExample2() throws Exception {
+    void testExample2() throws Exception {
         List<LogRecord> logs = runTest("example2", "index");
         assertThat(logs).hasSize(1);
         LogRecord record = logs.get(0);
@@ -105,7 +105,7 @@ public class ExampleTest {
     }
 
     @Test
-    public void testExample3() throws Exception {
+    void testExample3() throws Exception {
         List<LogRecord> logs = runTest("example3", "index");
 
         assertThat(logs).hasSize(2);
@@ -122,13 +122,13 @@ public class ExampleTest {
     }
 
     @Test
-    public void testExample4() throws Exception {
+    void testExample4() throws Exception {
         List<LogRecord> logs = runTest("example4", "index");
         assertThat(logs).isEmpty();
     }
 
     @Test
-    public void testExample5() throws Exception {
+    void testExample5() throws Exception {
         List<LogRecord> logs = runTest("example5", "index");
         assertThat(logs).hasSize(1);
         LogRecord record = logs.get(0);
@@ -137,37 +137,37 @@ public class ExampleTest {
     }
 
     @Test
-    public void testExample6Simple() throws Exception {
+    void testExample6Simple() throws Exception {
         List<LogRecord> logs = runTest("example6", "simple-guide");
         assertThat(logs).isEmpty();
     }
 
     @Test
-    public void testExample6Advanced() throws Exception {
+    void testExample6Advanced() throws Exception {
         List<LogRecord> logs = runTest("example6", "advanced-guide");
         assertThat(logs).isEmpty();
     }
 
     @Test
-    public void testExample6Internal() throws Exception {
+    void testExample6Internal() throws Exception {
         List<LogRecord> logs = runTest("example6", "internal-guide");
         assertThat(logs).isEmpty();
     }
 
     @Test
-    public void testExample6All() throws Exception {
+    void testExample6All() throws Exception {
         List<LogRecord> logs = runTest("example6", "all");
         assertThat(logs).isEmpty();
     }
 
     @Test
-    public void testExample7() throws Exception {
+    void testExample7() throws Exception {
         List<LogRecord> logs = runTest("example7", "index", null, true);
         assertThat(logs).isEmpty();
     }
 
     @Test
-    public void testExample8() throws Exception {
+    void testExample8() throws Exception {
         List<LogRecord> logs = runTest("example8", "index");
         assertThat(logs).isEmpty();
     }

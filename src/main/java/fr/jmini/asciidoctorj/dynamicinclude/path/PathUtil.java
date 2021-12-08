@@ -1,6 +1,3 @@
-/**
- *
- */
 package fr.jmini.asciidoctorj.dynamicinclude.path;
 
 import java.io.IOException;
@@ -28,10 +25,6 @@ import fr.jmini.utils.pathorder.Order;
 import fr.jmini.utils.pathorder.Pages;
 import fr.jmini.utils.pathorder.SortConfig;
 
-/**
- * @author jbr
- *
- */
 public class PathUtil {
     private static final String STAR_REPLACEMENT = "__STAR__";
 
@@ -78,10 +71,9 @@ public class PathUtil {
     }
 
     public static List<Path> filterCurrentFile(List<Path> files, Path currentFile) {
-        List<Path> filteredFile = files.stream()
+        return files.stream()
                 .filter(p -> !currentFile.equals(p))
                 .collect(Collectors.toList());
-        return filteredFile;
     }
 
     public static List<Path> sortFiles(Consumer<String> logger, List<Path> list, List<String> suffixes) {
@@ -212,4 +204,6 @@ public class PathUtil {
         return s.replace(STAR_REPLACEMENT, "*");
     }
 
+    private PathUtil() {
+    }
 }

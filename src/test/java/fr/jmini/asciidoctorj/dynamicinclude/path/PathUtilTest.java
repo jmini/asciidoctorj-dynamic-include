@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
-public class PathUtilTest {
+class PathUtilTest {
 
     @Test
     void testGetNameSuffix() throws Exception {
@@ -21,18 +21,18 @@ public class PathUtilTest {
         assertThat(PathUtil.getNameSuffix("test")).isNull();
         assertThat(PathUtil.getNameSuffix(".adoc")).isNull();
         assertThat(PathUtil.getNameSuffix("test.internal.adoc")).isEqualTo("internal");
-        assertThat(PathUtil.getNameSuffix("test..adoc")).isEqualTo("");
-        assertThat(PathUtil.getNameSuffix("..adoc")).isEqualTo("");
+        assertThat(PathUtil.getNameSuffix("test..adoc")).isEmpty();
+        assertThat(PathUtil.getNameSuffix("..adoc")).isEmpty();
     }
 
     @Test
     void testNameWithoutSuffix() throws Exception {
         assertThat(PathUtil.getNameWithoutSuffix("test.adoc")).isEqualTo("test");
         assertThat(PathUtil.getNameWithoutSuffix("test")).isEqualTo("test");
-        assertThat(PathUtil.getNameWithoutSuffix(".adoc")).isEqualTo("");
+        assertThat(PathUtil.getNameWithoutSuffix(".adoc")).isEmpty();
         assertThat(PathUtil.getNameWithoutSuffix("test.internal.adoc")).isEqualTo("test");
         assertThat(PathUtil.getNameWithoutSuffix("test..adoc")).isEqualTo("test");
-        assertThat(PathUtil.getNameWithoutSuffix("..adoc")).isEqualTo("");
+        assertThat(PathUtil.getNameWithoutSuffix("..adoc")).isEmpty();
     }
 
     @Test
