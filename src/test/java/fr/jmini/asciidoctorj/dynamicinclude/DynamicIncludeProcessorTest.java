@@ -86,7 +86,7 @@ class DynamicIncludeProcessorTest {
         TitleHolder title2 = new TitleHolder(TitleType.PRESENT, 2, "Other Page", "_other_page", 101, 105);
         Map<String, String> titleAnchorMap2 = Collections.singletonMap("Other Page", "_other_page");
         FileHolder holder2 = new FileHolder(dir.resolve(key2), key2, "other", null, "!! dummy content !!", title2, 1, titleAnchorMap2, Collections.emptyMap());
-        TitleHolder title3 = new TitleHolder(TitleType.PRESENT, 2, "Test Page", "_test_page", 101, 105);
+        TitleHolder title3 = new TitleHolder(TitleType.PRESENT, 2, "Foo", "_foo", 101, 105);
         Map<String, String> titleAnchorMap3 = Collections.singletonMap("Foo", "_foo");
         Map<String, String> anchorShift3 = Collections.singletonMap("_foo", "_foo_2");
         FileHolder holder3 = new FileHolder(dir.resolve(key3), key3, "some", null, "!! dummy content !!", title3, 1, titleAnchorMap3, anchorShift3);
@@ -134,8 +134,11 @@ class DynamicIncludeProcessorTest {
         String rootLinkNoAnchorX = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("Some <<{root}folder/other.adoc#>> link", list, dir, holder1, dir, true);
         assertThat(rootLinkNoAnchorX).isEqualTo("Some <<#_other_page>> link");
 
-        String someLinkFoo = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("See <<some.adoc#_foo, link>>", list, dir, holder1, dir, true);
-        assertThat(someLinkFoo).isEqualTo("See <<#_foo_2, link>>");
+        String someLinkFooNoAnchor = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("See <<some.adoc#, this page>>", list, dir, holder1, dir, true);
+        assertThat(someLinkFooNoAnchor).isEqualTo("See <<#_foo_2, this page>>");
+
+        String someLinkFooWithAnchor = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("See <<some.adoc#_foo, link>>", list, dir, holder1, dir, true);
+        assertThat(someLinkFooWithAnchor).isEqualTo("See <<#_foo_2, link>>");
 
         String selfLinkTitle = DynamicIncludeProcessor.replaceXrefDoubleAngledBracketLinks("See <<Other Page, this page title>>", list, dir, holder2, dir, true);
         assertThat(selfLinkTitle).isEqualTo("See <<#_other_page, this page title>>");
@@ -159,7 +162,7 @@ class DynamicIncludeProcessorTest {
         TitleHolder title2 = new TitleHolder(TitleType.PRESENT, 2, "Other Page", "_other_page", 101, 105);
         Map<String, String> titleAnchorMap2 = Collections.singletonMap("Other Page", "_other_page");
         FileHolder holder2 = new FileHolder(dir.resolve(key2), key2, "other", null, "!! dummy content !!", title2, 1, titleAnchorMap2, Collections.emptyMap());
-        TitleHolder title3 = new TitleHolder(TitleType.PRESENT, 2, "Test Page", "_test_page", 101, 105);
+        TitleHolder title3 = new TitleHolder(TitleType.PRESENT, 2, "Foo", "_foo", 101, 105);
         Map<String, String> titleAnchorMap3 = Collections.singletonMap("Foo", "_foo");
         Map<String, String> anchorShift3 = Collections.singletonMap("_foo", "_foo_2");
         FileHolder holder3 = new FileHolder(dir.resolve(key3), key3, "some", null, "!! dummy content !!", title3, 1, titleAnchorMap3, anchorShift3);
@@ -213,8 +216,11 @@ class DynamicIncludeProcessorTest {
         String rootLinkEmptyAnchor = DynamicIncludeProcessor.replaceXrefInlineLinks("Some xref:{root}folder/other.adoc#[root] link", list, dir, holder1, dir, true);
         assertThat(rootLinkEmptyAnchor).isEqualTo("Some xref:#_other_page[root] link");
 
-        String someLinkFoo = DynamicIncludeProcessor.replaceXrefInlineLinks("See xref:{root}folder/some.adoc#_foo[link]", list, dir, holder1, dir, true);
-        assertThat(someLinkFoo).isEqualTo("See xref:#_foo_2[link]");
+        String someLinkFooNoAnchor = DynamicIncludeProcessor.replaceXrefInlineLinks("See xref:{root}folder/some.adoc#[this page]", list, dir, holder1, dir, true);
+        assertThat(someLinkFooNoAnchor).isEqualTo("See xref:#_foo_2[this page]");
+
+        String someLinkFooWithAnchor = DynamicIncludeProcessor.replaceXrefInlineLinks("See xref:{root}folder/some.adoc#_foo[link]", list, dir, holder1, dir, true);
+        assertThat(someLinkFooWithAnchor).isEqualTo("See xref:#_foo_2[link]");
 
         String selfLinkTitle = DynamicIncludeProcessor.replaceXrefInlineLinks("See xref:#_other_page[this page title]", list, dir, holder2, dir, true);
         assertThat(selfLinkTitle).isEqualTo("See xref:#_other_page[this page title]");
@@ -442,8 +448,9 @@ class DynamicIncludeProcessorTest {
         assertThat(title4.getTitleType()).isEqualTo(TitleType.PRESENT);
         assertThat(title4.getTitle()).isEqualTo("Page A");
         assertThat(holder4.getTitleAnchorMap())
-                .hasSize(4)
+                .hasSize(5)
                 .containsEntry("Page A", "_page_a")
+                .containsEntry("Page B", "_page_b")
                 .containsEntry("Section 1", "_section_1")
                 .containsEntry("My title", "_my_title")
                 .containsEntry("Section 2", "_section_2");
@@ -460,8 +467,9 @@ class DynamicIncludeProcessorTest {
         assertThat(title4WithExisting.getTitleType()).isEqualTo(TitleType.PRESENT);
         assertThat(title4WithExisting.getTitle()).isEqualTo("Page A");
         assertThat(holder4WithExisting.getTitleAnchorMap())
-                .hasSize(4)
+                .hasSize(5)
                 .containsEntry("Page A", "_page_a")
+                .containsEntry("Page B", "_page_b")
                 .containsEntry("Section 1", "_section_1")
                 .containsEntry("My title", "_my_title")
                 .containsEntry("Section 2", "_section_2");

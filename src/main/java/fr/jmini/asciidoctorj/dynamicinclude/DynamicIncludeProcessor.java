@@ -520,15 +520,15 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
     }
 
     private static String computeNewAnchor(XrefHolder holder, FileHolder fileHolder) {
+        String anchor;
         if (holder.getAnchor() == null || holder.getAnchor()
                 .trim()
                 .isEmpty()) {
-            return fileHolder.getFirstTitle()
+            anchor = fileHolder.getFirstTitle()
                     .getTitleId();
         } else {
             String oldAnchor = holder.getAnchor()
                     .trim();
-            String anchor;
             if (fileHolder.getTitleAnchorMap()
                     .containsKey(oldAnchor)) {
                 anchor = fileHolder.getTitleAnchorMap()
@@ -536,13 +536,13 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             } else {
                 anchor = oldAnchor;
             }
-            if (fileHolder.getAnchorShift()
-                    .containsKey(anchor)) {
-                return fileHolder.getAnchorShift()
-                        .get(anchor);
-            } else {
-                return anchor;
-            }
+        }
+        if (fileHolder.getAnchorShift()
+                .containsKey(anchor)) {
+            return fileHolder.getAnchorShift()
+                    .get(anchor);
+        } else {
+            return anchor;
         }
     }
 
