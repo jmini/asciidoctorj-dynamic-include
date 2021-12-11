@@ -1,5 +1,7 @@
 :idprefix: =
 :idseparator: -
+ifndef::root[:root: ../]
+ifndef::other[:other: {root}other/]
 
 == Page B
 

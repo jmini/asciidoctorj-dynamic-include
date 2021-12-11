@@ -196,8 +196,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             }
 
             String content = sb.toString();
-            content = replaceXrefDoubleAngledBracketLinks(content, list, dir, item, root, externalXrefAsText);
-            content = replaceXrefInlineLinks(content, list, dir, item, root, externalXrefAsText);
+            content = replaceXrefDoubleAngledBracketLinks(content, list, dir, item, root, externalXrefAsText, (String key) -> getDocumentAttribute(document, key));
+            content = replaceXrefInlineLinks(content, list, dir, item, root, externalXrefAsText, (String key) -> getDocumentAttribute(document, key));
 
             reader.push_include(content, file.getName(), path.toString(), lineNumber, attributes);
         }
@@ -376,15 +376,16 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return headerLevel - titleLevel;
     }
 
-    public static String replaceXrefDoubleAngledBracketLinks(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText) {
-        return replaceXref(content, list, dir, currentPath, currentRoot, externalXrefAsText, DynamicIncludeProcessor::findNextXrefDoubleAngledBracket);
+    public static String replaceXrefDoubleAngledBracketLinks(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText, Function<String, Optional<String>> resolver) {
+        return replaceXref(content, list, dir, currentPath, currentRoot, externalXrefAsText, DynamicIncludeProcessor::findNextXrefDoubleAngledBracket, resolver);
     }
 
-    public static String replaceXrefInlineLinks(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText) {
-        return replaceXref(content, list, dir, currentPath, currentRoot, externalXrefAsText, DynamicIncludeProcessor::findNextXrefInline);
+    public static String replaceXrefInlineLinks(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText, Function<String, Optional<String>> resolver) {
+        return replaceXref(content, list, dir, currentPath, currentRoot, externalXrefAsText, DynamicIncludeProcessor::findNextXrefInline, resolver);
     }
 
-    private static String replaceXref(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText, BiFunction<String, Integer, Optional<XrefHolder>> findFunction) {
+    private static String replaceXref(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText, BiFunction<String, Integer, Optional<XrefHolder>> findFunction,
+            Function<String, Optional<String>> resolver) {
         if (list.isEmpty()) {
             return content;
         }
@@ -396,7 +397,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             XrefHolder holder = find.get();
 
             sb.append(content.substring(startAt, holder.getStartIndex()));
-            XrefHolder replacedHolder = replaceHolder(holder, list, dir, currentPath, currentRoot, externalXrefAsText);
+            XrefHolder replacedHolder = replaceHolder(holder, list, dir, currentPath, currentRoot, externalXrefAsText, resolver);
             sb.append(holderToAsciiDoc(replacedHolder));
 
             startAt = holder.getEndIndex();
@@ -477,21 +478,24 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return Optional.empty();
     }
 
-    private static XrefHolder replaceHolder(XrefHolder holder, List<FileHolder> list, Path dir, FileHolder currentFile, Path currentRoot, boolean externalXrefAsText) {
+    private static XrefHolder replaceHolder(XrefHolder holder, List<FileHolder> list, Path dir, FileHolder currentFile, Path currentRoot, boolean externalXrefAsText, Function<String, Optional<String>> resolver) {
         String newFileName;
         String newAnchor;
         String fileName = holder.getFile();
         XrefHolderType type = holder.getType();
         if (fileName != null) {
             Path file;
-            if (fileName.startsWith("{root}")) {
-                file = currentRoot.resolve(fileName.substring(6));
-            } else if (fileName.isEmpty()) {
+            if (fileName.isEmpty()) {
                 file = currentFile.getPath();
             } else {
-                file = currentFile.getPath()
-                        .getParent()
-                        .resolve(fileName);
+                String subpath = resolveAttributes(fileName, resolver);
+                file = currentRoot.resolve(subpath);
+                if (!Files.exists(file)) {
+                    file = currentFile.getPath()
+                            .getParent()
+                            .resolve(fileName);
+                }
+                file = file.normalize();
             }
             Optional<FileHolder> findFile = findByFile(list, file);
             if (!findFile.isPresent()) {
@@ -517,6 +521,34 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             }
         }
         return new XrefHolder(newFileName, newAnchor, holder.getText(), type, -1, -1);
+    }
+
+    static String resolveAttributes(String value, Function<String, Optional<String>> resolver) {
+        return resolveAttributes(value, resolver, Collections.emptyList());
+    }
+
+    private static String resolveAttributes(String value, Function<String, Optional<String>> resolver, List<String> stack) {
+        List<Range> ranges = SINGLE_CURLY_BRACKET_FINDER.findAll(value, false);
+        int position = 0;
+        StringBuilder sb = new StringBuilder();
+        for (Range range : ranges) {
+            sb.append(value.substring(position, range.getRangeStart()));
+            String key = value.substring(range.getContentStart(), range.getContentEnd());
+            List<String> newStack = new ArrayList<>(stack);
+            newStack.add(key);
+            if (stack.contains(key)) {
+                throw new IllegalStateException("Can not evaluate the value of '{" + key + "}', because of following circular definition: {" + String.join("} -> {", newStack) + "}");
+            }
+            Optional<String> replacement = resolver.apply(key);
+            if (replacement.isPresent()) {
+                sb.append(resolveAttributes(replacement.get(), resolver, Collections.unmodifiableList(newStack)));
+            } else {
+                sb.append(value.substring(range.getRangeStart(), range.getRangeEnd()));
+            }
+            position = range.getRangeEnd();
+        }
+        sb.append(value.substring(position, value.length()));
+        return sb.toString();
     }
 
     private static String computeNewAnchor(XrefHolder holder, FileHolder fileHolder) {
