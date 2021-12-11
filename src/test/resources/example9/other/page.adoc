@@ -1,0 +1,13 @@
+
+:idprefix: =
+:idseparator: -
+
+== Other page
+
+=== Other section
+
+Foo
+
+==== Other title
+
+Bar

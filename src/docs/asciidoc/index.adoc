@@ -96,6 +96,15 @@ When the same title is used several times, Asciidoc is handling the colliding an
 
 The macro is correcting the xref links accordingly to the title anchor in the final document.
 
+=== xref link optimization
+
+The macro is normalizing xref links.
+
+When xref link definition contains attributes (like `xref:{root}/pages/page1.adoc`) if the attribute value is defined in the main document (the one using the dynamic include macro), then its value will be already replaced before including the content in the main document.
+If not defined, the attribute will not be changed, letting Asciidoctor handling the value replacement. 
+
+Normalization and anchor correction can only be applied if the targeted file exists (checked first relatively to the main document and secondly relatively to the included document).
+
 == AsciidoctorJ version
 
 This extension is compatible with `org.asciidoctor:asciidoctorj` in range `{asciidoctorj-version}`.
