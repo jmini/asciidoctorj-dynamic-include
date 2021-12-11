@@ -8,6 +8,7 @@
 * link to <<#=my-title-2, title 2>>
 * link to <<pageB.adoc#=my-title, title 8>>
 * link to <<pageB.adoc#=my-title-2, title 9>>
+* link to <<pageB.adoc#, PAGE B>>
 
 Foo
 
@@ -18,6 +19,10 @@ Lorem 1
 ==== My title
 
 Ipsum 1
+
+==== Page B
+
+Info about page B
 
 === Section 2
 

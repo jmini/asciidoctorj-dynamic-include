@@ -47,7 +47,11 @@ It is possible to include them all with a single include:
 \include::dynamic:content/*.adoc[]
 ----
 
+=== Ordering pages
+
 To control the order of the included files, the approach using `pages.yaml` described in the project link:https://jmini.github.io/path-order/[path-order] can be used.
+
+=== Title level correction
 
 The processor will take care of the title levels.
 
@@ -85,6 +89,12 @@ This allows to have a tree structure like this:
 ├── index.html
 └── pages.yaml
 ----
+
+=== xref link correction
+
+When the same title is used several times, Asciidoc is handling the colliding anchors and create unique ids. For `My Title` it will create anchors like `_my_title`, `_my_title_2`, `_my_title_3`…
+
+The macro is correcting the xref links accordingly to the title anchor in the final document.
 
 == AsciidoctorJ version
 
