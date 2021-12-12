@@ -4,7 +4,6 @@ ifndef::root[:root: ./]
 ifndef::other[:other: {root}other/]
 :bar: ../other
 
-
 == Example 9
 
 include::dynamic:pages/*.adoc[]

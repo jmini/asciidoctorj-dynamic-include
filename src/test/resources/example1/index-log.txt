@@ -1,0 +1,7 @@
+# File: 
+# Target: dynamic:pages/*.adoc
+# level-offset-shifting: 1
+pages/index.adoc (leveloffset: 0)
+pages/page1.adoc (leveloffset: +1)
+pages/page2.adoc (leveloffset: +1)
+

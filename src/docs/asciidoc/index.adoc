@@ -105,6 +105,126 @@ If not defined, the attribute will not be changed, letting Asciidoctor handling 
 
 Normalization and anchor correction can only be applied if the targeted file exists (checked first relatively to the main document and secondly relatively to the included document).
 
+== Options
+
+All options can be used as attribute of the include processor:
+
+----
+include::dynamic:content/*.adoc[external-xref-as-text="true"]
+----
+
+Or as attribute of the document:
+
+----
+:dynamic-include-external-xref-as-text: true
+----
+
+In this second case it will be applied to all usages of the dynamic-include processor.
+
+=== level-offset-shifting
+
+* option `level-offset-shifting`
+* or as document attribute `dynamic-include-level-offset-shifting`
+
+This option allows to shift the title level of the included document.
+This can be useful if you have already some title in the main document.
+When not set the default value is `1`.
+
+=== external-xref-as-text
+
+* option `external-xref-as-text`
+* or as document attribute `dynamic-include-external-xref-as-text`
+
+When set, `xref` links to pages that are not included in the list of pages are turned to regular text.
+
+=== logfile
+
+* option `logfile`
+* or as document attribute `dynamic-include-logfile`
+
+When set a file listing the pages that are included by the dynamic-include processor will be generated at the location indicated by the value of this option.
+
+Example output:
+
+[source, txt]
+.example log file
+----
+include::../../test/resources/example1/index-log.txt[]
+----
+
+=== suffixes
+
+* option `suffixes`
+* or as document attribute `dynamic-include-suffixes`
+
+Following the possibility link:https://jmini.github.io/path-order/#qualify-files[qualify files] introduced by the *path-oder* project, the suffix is defined as the section between the file name and the extension. For the file `page.adoc` (no suffix), following files add a suffix: `page.draft.adoc` (`draft` suffix), `page.advanced.adoc` (`advanced` suffix).
+
+By default the files with suffixes are not included by the dynamic include processor.
+
+When `suffixes` is specified, the corresponding pages are included after each corresponding file without suffix.
+Values are separated with `:`.
+The order in the list impacts the order of the inclusion.
+
+Given this page tree:
+
+[source, txt]
+.tree of pages with suffix
+----
+├── document.adoc
+└── pages
+    ├── page1.adoc
+    ├── page1.advanced.adoc
+    ├── page1.draft.adoc
+    ├── page2.adoc
+    ├── page2.advanced.adoc
+    └── page2.draft.adoc
+----
+
+In the main document `document.adoc`:
+
+* `include::dynamic:pages/*.adoc[]` will include only `page1.adoc` and `page2.adoc`.
+* `include::dynamic:pages/*.adoc[suffixes="draft"]` will include `page1.adoc`, `page1.draft.adoc`, `page2.adoc` and `page2.draft.adoc`
+* `include::dynamic:pages/*.adoc[suffixes="draft:advanced"]` will include `page1.adoc`, `page1.draft.adoc`, `page1.advanced.adoc`, `page2.adoc`, `page2.draft.adoc` and `page2.advanced.adoc`
+
+=== link to the source file
+
+Before each inclusion it is possible to have a link to the included document.
+
+* Indicates if the link is present or not:
+** option `display-view-source`
+** or as document attribute `dynamic-include-display-view-source`
+* Pattern of the link:
+** option `view-source-link-pattern`
+** or as document attribute `dynamic-include-view-source-link-pattern`
+* Text of the link:
+** option `view-source-link-text`
+** or as document attribute `dynamic-include-view-source-link-text`
+
+The pattern of the link can use following special attributes (they will be computed dynamically):
+
+* `file-relative-to-git-repository`: path of the file relatively to the folder defined by `local-git-repository-path` attribute.
+* `file-relative-to-gradle-projectdir`: path of the file relatively to the folder defined by `gradle-projectdir` attribute.
+* `file-relative-to-gradle-rootdir`: path of the file relatively to the folder defined by `gradle-rootdir` attribute.
+* `file-absolute-with-leading-slash`: absolute path of the file with a leading slash.
+
+Examples setup:
+
+[source, adoc]
+.display a link to open the file in vscode
+----
+dynamic-include-display-view-source : true
+dynamic-include-view-source-link-text : edit in vscode
+dynamic-include-view-source-link-pattern : vscode://file{file-absolute-with-leading-slash}.
+----
+
+[source, adoc]
+.display a link to see the file in GitHub
+----
+dynamic-include-display-view-source : true
+dynamic-include-view-source-link-text : view in github
+dynamic-include-view-source-link-pattern : https://github.com/jmini/asciidoctorj-dynamic-include/blob/HEAD/{file-relative-to-gradle-rootdir}
+----
+
 == AsciidoctorJ version
 
 This extension is compatible with `org.asciidoctor:asciidoctorj` in range `{asciidoctorj-version}`.

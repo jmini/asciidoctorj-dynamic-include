@@ -28,13 +28,11 @@ class ExampleTest {
         List<LogRecord> logs = runTest("example1", "index", logfile.toString());
         assertThat(logs).isEmpty();
 
+        Path expectedLogFile = Paths.get("src/test/resources/example1/index-log.txt");
+        String expectedLogContent = new String(Files.readAllBytes(expectedLogFile), StandardCharsets.UTF_8);
         String content = readFile(logfile);
-        assertThat(content).isEqualTo("# File: \n" +
-                "# Target: dynamic:pages/*.adoc\n" +
-                "# level-offset-shifting: 1\n" +
-                "pages/index.adoc (leveloffset: 0)\n" +
-                "pages/page1.adoc (leveloffset: +1)\n" +
-                "pages/page2.adoc (leveloffset: +1)\n\n");
+        Files.write(expectedLogFile, content.getBytes(StandardCharsets.UTF_8));
+        assertThat(content).isEqualTo(expectedLogContent);
     }
 
     @Test
