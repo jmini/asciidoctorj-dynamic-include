@@ -564,10 +564,10 @@ class DynamicIncludeProcessorTest {
     }
 
     @Test
-    void testReplacePlaceholders() throws Exception {
+    void testResolveAttributesInViewSourceLinkPattern() throws Exception {
         Path file = Paths.get("/some/path/file.txt");
         Path file2 = Paths.get(URI.create("file:///C:/some/path/file.txt"));
-        Function<String, Optional<String>> attributeGetter = (String s) -> {
+        Function<String, Optional<String>> attributeResolver = (String s) -> {
             switch (s) {
             case "foo":
                 return Optional.of("bar");
@@ -581,23 +581,23 @@ class DynamicIncludeProcessorTest {
             return Optional.empty();
         };
 
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("xxx", file, attributeGetter)).isEqualTo("xxx");
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("{foo}", file, attributeGetter)).isEqualTo("bar");
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("xxx{foo}", file, attributeGetter)).isEqualTo("xxxbar");
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("{foo}xxx", file, attributeGetter)).isEqualTo("barxxx");
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("xxx{foo}xxx", file, attributeGetter)).isEqualTo("xxxbarxxx");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("xxx", file, attributeResolver)).isEqualTo("xxx");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("{foo}", file, attributeResolver)).isEqualTo("bar");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("xxx{foo}", file, attributeResolver)).isEqualTo("xxxbar");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("{foo}xxx", file, attributeResolver)).isEqualTo("barxxx");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("xxx{foo}xxx", file, attributeResolver)).isEqualTo("xxxbarxxx");
 
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("{baz}", file, attributeGetter)).isEqualTo("{baz}");
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("xxx{baz}", file, attributeGetter)).isEqualTo("xxx{baz}");
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("{baz}xxx", file, attributeGetter)).isEqualTo("{baz}xxx");
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("xxx{baz}xxx", file, attributeGetter)).isEqualTo("xxx{baz}xxx");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("{baz}", file, attributeResolver)).isEqualTo("{baz}");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("xxx{baz}", file, attributeResolver)).isEqualTo("xxx{baz}");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("{baz}xxx", file, attributeResolver)).isEqualTo("{baz}xxx");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("xxx{baz}xxx", file, attributeResolver)).isEqualTo("xxx{baz}xxx");
 
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("vscode://file{file-absolute-with-leading-slash}", file, attributeGetter)).isEqualTo("vscode://file/some/path/file.txt");
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("vscode://file{file-absolute-with-leading-slash}", file2, attributeGetter)).isEqualTo("vscode://file/C:/some/path/file.txt");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("vscode://file{file-absolute-with-leading-slash}", file, attributeResolver)).isEqualTo("vscode://file/some/path/file.txt");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("vscode://file{file-absolute-with-leading-slash}", file2, attributeResolver)).isEqualTo("vscode://file/C:/some/path/file.txt");
 
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("https://example.com/{file-relative-to-git-repository}", file, attributeGetter)).isEqualTo("https://example.com/file.txt");
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("https://example.com/{file-relative-to-gradle-projectdir}", file, attributeGetter)).isEqualTo("https://example.com/file.txt");
-        assertThat(DynamicIncludeProcessor.replacePlaceholders("https://example.com/{file-relative-to-gradle-rootdir}", file, attributeGetter)).isEqualTo("https://example.com/path/file.txt");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("https://example.com/{file-relative-to-git-repository}", file, attributeResolver)).isEqualTo("https://example.com/file.txt");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("https://example.com/{file-relative-to-gradle-projectdir}", file, attributeResolver)).isEqualTo("https://example.com/file.txt");
+        assertThat(DynamicIncludeProcessor.resolveAttributesInViewSourceLinkPattern("https://example.com/{file-relative-to-gradle-rootdir}", file, attributeResolver)).isEqualTo("https://example.com/path/file.txt");
     }
 
     private FileHolder createFileHolder(Path dir, String subPath) {

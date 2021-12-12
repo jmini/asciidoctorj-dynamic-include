@@ -77,6 +77,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         String viewSourceLinkPattern = readKey(document, attributes, "view-source-link-pattern", "dynamic-include-view-source-link-pattern", "#");
         String viewSourceLinkText = readKey(document, attributes, "view-source-link-text", "dynamic-include-view-source-link-text", "view source");
 
+        Function<String, Optional<String>> attributeResolver = (String key) -> getDocumentAttribute(document, key);
+
         Path root;
         if (document.hasAttribute("root")) {
             root = dir.resolve(document.getAttribute("root")
@@ -163,7 +165,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             lineNumber = lineNumber - 2;
 
             if (displayViewSourceLink) {
-                String viewSourceUrl = replacePlaceholders(viewSourceLinkPattern, path, (String k) -> getDocumentAttribute(document, k));
+                String viewSourceUrl = resolveAttributesInViewSourceLinkPattern(viewSourceLinkPattern, path, attributeResolver);
 
                 lineNumber = lineNumber - 3;
                 sb.append("\n");
@@ -196,8 +198,8 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             }
 
             String content = sb.toString();
-            content = replaceXrefDoubleAngledBracketLinks(content, list, dir, item, root, externalXrefAsText, (String key) -> getDocumentAttribute(document, key));
-            content = replaceXrefInlineLinks(content, list, dir, item, root, externalXrefAsText, (String key) -> getDocumentAttribute(document, key));
+            content = replaceXrefDoubleAngledBracketLinks(content, list, dir, item, root, externalXrefAsText, attributeResolver);
+            content = replaceXrefInlineLinks(content, list, dir, item, root, externalXrefAsText, attributeResolver);
 
             reader.push_include(content, file.getName(), path.toString(), lineNumber, attributes);
         }
@@ -376,16 +378,16 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return headerLevel - titleLevel;
     }
 
-    public static String replaceXrefDoubleAngledBracketLinks(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText, Function<String, Optional<String>> resolver) {
-        return replaceXref(content, list, dir, currentPath, currentRoot, externalXrefAsText, DynamicIncludeProcessor::findNextXrefDoubleAngledBracket, resolver);
+    public static String replaceXrefDoubleAngledBracketLinks(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText, Function<String, Optional<String>> attributeResolver) {
+        return replaceXref(content, list, dir, currentPath, currentRoot, externalXrefAsText, DynamicIncludeProcessor::findNextXrefDoubleAngledBracket, attributeResolver);
     }
 
-    public static String replaceXrefInlineLinks(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText, Function<String, Optional<String>> resolver) {
-        return replaceXref(content, list, dir, currentPath, currentRoot, externalXrefAsText, DynamicIncludeProcessor::findNextXrefInline, resolver);
+    public static String replaceXrefInlineLinks(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText, Function<String, Optional<String>> attributeResolver) {
+        return replaceXref(content, list, dir, currentPath, currentRoot, externalXrefAsText, DynamicIncludeProcessor::findNextXrefInline, attributeResolver);
     }
 
     private static String replaceXref(String content, List<FileHolder> list, Path dir, FileHolder currentPath, Path currentRoot, boolean externalXrefAsText, BiFunction<String, Integer, Optional<XrefHolder>> findFunction,
-            Function<String, Optional<String>> resolver) {
+            Function<String, Optional<String>> attributeResolver) {
         if (list.isEmpty()) {
             return content;
         }
@@ -397,7 +399,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             XrefHolder holder = find.get();
 
             sb.append(content.substring(startAt, holder.getStartIndex()));
-            XrefHolder replacedHolder = replaceHolder(holder, list, dir, currentPath, currentRoot, externalXrefAsText, resolver);
+            XrefHolder replacedHolder = replaceHolder(holder, list, dir, currentPath, currentRoot, externalXrefAsText, attributeResolver);
             sb.append(holderToAsciiDoc(replacedHolder));
 
             startAt = holder.getEndIndex();
@@ -478,7 +480,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return Optional.empty();
     }
 
-    private static XrefHolder replaceHolder(XrefHolder holder, List<FileHolder> list, Path dir, FileHolder currentFile, Path currentRoot, boolean externalXrefAsText, Function<String, Optional<String>> resolver) {
+    private static XrefHolder replaceHolder(XrefHolder holder, List<FileHolder> list, Path dir, FileHolder currentFile, Path currentRoot, boolean externalXrefAsText, Function<String, Optional<String>> attributeResolver) {
         String newFileName;
         String newAnchor;
         String fileName = holder.getFile();
@@ -488,7 +490,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
             if (fileName.isEmpty()) {
                 file = currentFile.getPath();
             } else {
-                String subpath = resolveAttributes(fileName, resolver);
+                String subpath = resolveAttributes(fileName, attributeResolver);
                 file = currentRoot.resolve(subpath);
                 if (!Files.exists(file)) {
                     file = currentFile.getPath()
@@ -643,58 +645,37 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
         return counter;
     }
 
-    public static String replacePlaceholders(String viewSourceLinkPattern, Path file, Function<String, Optional<String>> attributeGetter) {
-        StringBuilder sb = new StringBuilder();
-
-        int startAt = 0;
-        while (startAt < viewSourceLinkPattern.length()) {
-            Optional<Range> find = SINGLE_CURLY_BRACKET_FINDER.nextRange(viewSourceLinkPattern, startAt);
-            if (find.isPresent()) {
-                Range range = find.get();
-                sb.append(viewSourceLinkPattern.substring(startAt, range.getRangeStart()));
-                String placeholderName = viewSourceLinkPattern.substring(range.getContentStart(), range.getContentEnd());
-                String placeholderLowerCase = placeholderName.toLowerCase();
-                switch (placeholderLowerCase) {
-                case "file-relative-to-git-repository":
-                    Optional<String> localGitRepositoryPath = attributeGetter.apply("local-git-repository-path");
-                    appendPlaceholderValue(sb, placeholderName, localGitRepositoryPath, folderPath -> PathUtil.computeRelativePath(file, folderPath));
-                    break;
-                case "file-relative-to-gradle-projectdir":
-                    Optional<String> gradleProjectdir = attributeGetter.apply("gradle-projectdir");
-                    appendPlaceholderValue(sb, placeholderName, gradleProjectdir, folderPath -> PathUtil.computeRelativePath(file, folderPath));
-                    break;
-                case "file-relative-to-gradle-rootdir":
-                    Optional<String> gradleRootdir = attributeGetter.apply("gradle-rootdir");
-                    appendPlaceholderValue(sb, placeholderName, gradleRootdir, folderPath -> PathUtil.computeRelativePath(file, folderPath));
-                    break;
-                case "file-absolute-with-leading-slash":
-                    String absolutePath = PathUtil.normalizePath(file.toAbsolutePath());
-                    if (!absolutePath.startsWith("/")) {
-                        sb.append("/");
-                    }
-                    sb.append(absolutePath);
-                    break;
-                default:
-                    Optional<String> attribute = attributeGetter.apply(placeholderLowerCase);
-                    appendPlaceholderValue(sb, placeholderName, attribute, Function.identity());
-                    break;
+    public static String resolveAttributesInViewSourceLinkPattern(String viewSourceLinkPattern, Path file, Function<String, Optional<String>> attributeResolver) {
+        Function<String, Optional<String>> resolver = (String placeholderName) -> {
+            String placeholderLowerCase = placeholderName.toLowerCase();
+            switch (placeholderLowerCase) {
+            case "file-relative-to-git-repository":
+                Optional<String> localGitRepositoryPath = attributeResolver.apply("local-git-repository-path");
+                return relativePathResolver(placeholderName, localGitRepositoryPath, file);
+            case "file-relative-to-gradle-projectdir":
+                Optional<String> gradleProjectdir = attributeResolver.apply("gradle-projectdir");
+                return relativePathResolver(placeholderName, gradleProjectdir, file);
+            case "file-relative-to-gradle-rootdir":
+                Optional<String> gradleRootdir = attributeResolver.apply("gradle-rootdir");
+                return relativePathResolver(placeholderName, gradleRootdir, file);
+            case "file-absolute-with-leading-slash":
+                String absolutePath = PathUtil.normalizePath(file.toAbsolutePath());
+                if (!absolutePath.startsWith("/")) {
+                    return Optional.of("/" + absolutePath);
                 }
-                startAt = range.getRangeEnd();
-            } else {
-                sb.append(viewSourceLinkPattern.substring(startAt));
-                startAt = viewSourceLinkPattern.length();
+                return Optional.of(absolutePath);
+            default:
+                return attributeResolver.apply(placeholderLowerCase);
             }
-        }
-        return sb.toString();
+        };
+        return resolveAttributes(viewSourceLinkPattern, resolver);
     }
 
-    private static void appendPlaceholderValue(StringBuilder sb, String placeholderName, Optional<String> attribute, Function<String, String> converter) {
-        if (attribute.isPresent()) {
-            sb.append(converter.apply(attribute.get()));
+    private static Optional<String> relativePathResolver(String placeholderName, Optional<String> folderPath, Path file) {
+        if (folderPath.isPresent()) {
+            return Optional.of(PathUtil.computeRelativePath(file, folderPath.get()));
         } else {
-            sb.append("{");
-            sb.append(placeholderName);
-            sb.append("}");
+            return Optional.of("{" + placeholderName + "}");
         }
     }
 
