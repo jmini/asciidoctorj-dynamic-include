@@ -533,14 +533,30 @@ table.CodeRay td.code{padding:0 0 0 .75em}
 <h1>AsciidoctorJ dynamic-include</h1>
 <div class="details">
 <span id="author" class="author">Jeremie Bresson</span><br>
-<span id="revnumber">version 2.1.1,</span>
-<span id="revdate">2021-12-08</span>
+<span id="revnumber">version 2.1.2,</span>
+<span id="revdate">2021-12-12</span>
 </div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#urls">URLs</a></li>
-<li><a href="#description">Description</a></li>
+<li><a href="#description">Description</a>
+<ul class="sectlevel2">
+<li><a href="#ordering-pages">Ordering pages</a></li>
+<li><a href="#title-level-correction">Title level correction</a></li>
+<li><a href="#xref-link-correction">xref link correction</a></li>
+<li><a href="#xref-link-optimization">xref link optimization</a></li>
+</ul>
+</li>
+<li><a href="#options">Options</a>
+<ul class="sectlevel2">
+<li><a href="#level-offset-shifting">level-offset-shifting</a></li>
+<li><a href="#external-xref-as-text">external-xref-as-text</a></li>
+<li><a href="#logfile">logfile</a></li>
+<li><a href="#suffixes">suffixes</a></li>
+<li><a href="#link-to-the-source-file">link to the source file</a></li>
+</ul>
+</li>
 <li><a href="#asciidoctorj-version">AsciidoctorJ version</a></li>
 <li><a href="#usage-examples">Usage examples</a>
 <ul class="sectlevel2">
@@ -634,9 +650,14 @@ include::content/chapter03.adoc[]</code></pre>
 include::dynamic:content/*.adoc[]</code></pre>
 </div>
 </div>
+<div class="sect2">
+<h3 id="ordering-pages"><a class="anchor" href="#ordering-pages"></a>Ordering pages</h3>
 <div class="paragraph">
 <p>To control the order of the included files, the approach using <code>pages.yaml</code> described in the project <a href="https://jmini.github.io/path-order/">path-order</a> can be used.</p>
 </div>
+</div>
+<div class="sect2">
+<h3 id="title-level-correction"><a class="anchor" href="#title-level-correction"></a>Title level correction</h3>
 <div class="paragraph">
 <p>The processor will take care of the title levels.</p>
 </div>
@@ -678,6 +699,260 @@ A sub-folder will correspond to a shift of one in the hierarchy, with a special 
 ├── index.adoc
 ├── index.html
 └── pages.yaml</pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="xref-link-correction"><a class="anchor" href="#xref-link-correction"></a>xref link correction</h3>
+<div class="paragraph">
+<p>When the same title is used several times, Asciidoc is handling the colliding anchors and create unique ids. For <code>My Title</code> it will create anchors like <code>_my_title</code>, <code>_my_title_2</code>, <code>_my_title_3</code>…</p>
+</div>
+<div class="paragraph">
+<p>The macro is correcting the xref links accordingly to the title anchor in the final document.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="xref-link-optimization"><a class="anchor" href="#xref-link-optimization"></a>xref link optimization</h3>
+<div class="paragraph">
+<p>The macro is normalizing xref links.</p>
+</div>
+<div class="paragraph">
+<p>When xref link definition contains attributes (like <code>xref:{root}/pages/page1.adoc</code>) if the attribute value is defined in the main document (the one using the dynamic include macro), then its value will be already replaced before including the content in the main document.
+If not defined, the attribute will not be changed, letting Asciidoctor handling the value replacement.</p>
+</div>
+<div class="paragraph">
+<p>Normalization and anchor correction can only be applied if the targeted file exists (checked first relatively to the main document and secondly relatively to the included document).</p>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="options"><a class="anchor" href="#options"></a>Options</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>All options can be used as attribute of the include processor:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>link:dynamic:content/*.adoc[external-xref-as-text="true"]</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Or as attribute of the document:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>:dynamic-include-external-xref-as-text: true</pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In this second case it will be applied to all usages of the dynamic-include processor.</p>
+</div>
+<div class="sect2">
+<h3 id="level-offset-shifting"><a class="anchor" href="#level-offset-shifting"></a>level-offset-shifting</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>option <code>level-offset-shifting</code></p>
+</li>
+<li>
+<p>or as document attribute <code>dynamic-include-level-offset-shifting</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>This option allows to shift the title level of the included document.
+This can be useful if you have already some title in the main document.
+When not set the default value is <code>1</code>.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="external-xref-as-text"><a class="anchor" href="#external-xref-as-text"></a>external-xref-as-text</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>option <code>external-xref-as-text</code></p>
+</li>
+<li>
+<p>or as document attribute <code>dynamic-include-external-xref-as-text</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When set, <code>xref</code> links to pages that are not included in the list of pages are turned to regular text.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="logfile"><a class="anchor" href="#logfile"></a>logfile</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>option <code>logfile</code></p>
+</li>
+<li>
+<p>or as document attribute <code>dynamic-include-logfile</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>When set a file listing the pages that are included by the dynamic-include processor will be generated at the location indicated by the value of this option.</p>
+</div>
+<div class="paragraph">
+<p>Example output:</p>
+</div>
+<div class="listingblock">
+<div class="title">Listing 3. example log file</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="txt"># File:
+# Target: dynamic:pages/*.adoc
+# level-offset-shifting: 1
+pages/index.adoc (leveloffset: 0)
+pages/page1.adoc (leveloffset: +1)
+pages/page2.adoc (leveloffset: +1)</code></pre>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="suffixes"><a class="anchor" href="#suffixes"></a>suffixes</h3>
+<div class="ulist">
+<ul>
+<li>
+<p>option <code>suffixes</code></p>
+</li>
+<li>
+<p>or as document attribute <code>dynamic-include-suffixes</code></p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Following the possibility <a href="https://jmini.github.io/path-order/#qualify-files">qualify files</a> introduced by the <strong>path-oder</strong> project, the suffix is defined as the section between the file name and the extension. For the file <code>page.adoc</code> (no suffix), following files add a suffix: <code>page.draft.adoc</code> (<code>draft</code> suffix), <code>page.advanced.adoc</code> (<code>advanced</code> suffix).</p>
+</div>
+<div class="paragraph">
+<p>By default the files with suffixes are not included by the dynamic include processor.</p>
+</div>
+<div class="paragraph">
+<p>When <code>suffixes</code> is specified, the corresponding pages are included after each corresponding file without suffix.
+Values are separated with <code>:</code>.
+The order in the list impacts the order of the inclusion.</p>
+</div>
+<div class="paragraph">
+<p>Given this page tree:</p>
+</div>
+<div class="listingblock">
+<div class="title">Listing 4. tree of pages with suffix</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="txt">├── document.adoc
+└── pages
+    ├── page1.adoc
+    ├── page1.advanced.adoc
+    ├── page1.draft.adoc
+    ├── page2.adoc
+    ├── page2.advanced.adoc
+    └── page2.draft.adoc</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>In the main document <code>document.adoc</code>:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>include::dynamic:pages/*.adoc[]</code> will include only <code>page1.adoc</code> and <code>page2.adoc</code>.</p>
+</li>
+<li>
+<p><code>include::dynamic:pages/*.adoc[suffixes="draft"]</code> will include <code>page1.adoc</code>, <code>page1.draft.adoc</code>, <code>page2.adoc</code> and <code>page2.draft.adoc</code></p>
+</li>
+<li>
+<p><code>include::dynamic:pages/*.adoc[suffixes="draft:advanced"]</code> will include <code>page1.adoc</code>, <code>page1.draft.adoc</code>, <code>page1.advanced.adoc</code>, <code>page2.adoc</code>, <code>page2.draft.adoc</code> and <code>page2.advanced.adoc</code></p>
+</li>
+</ul>
+</div>
+</div>
+<div class="sect2">
+<h3 id="link-to-the-source-file"><a class="anchor" href="#link-to-the-source-file"></a>link to the source file</h3>
+<div class="paragraph">
+<p>Before each inclusion it is possible to have a link to the included document.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Indicates if the link is present or not:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>option <code>display-view-source</code></p>
+</li>
+<li>
+<p>or as document attribute <code>dynamic-include-display-view-source</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Pattern of the link:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>option <code>view-source-link-pattern</code></p>
+</li>
+<li>
+<p>or as document attribute <code>dynamic-include-view-source-link-pattern</code></p>
+</li>
+</ul>
+</div>
+</li>
+<li>
+<p>Text of the link:</p>
+<div class="ulist">
+<ul>
+<li>
+<p>option <code>view-source-link-text</code></p>
+</li>
+<li>
+<p>or as document attribute <code>dynamic-include-view-source-link-text</code></p>
+</li>
+</ul>
+</div>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>The pattern of the link can use following special attributes (they will be computed dynamically):</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>file-relative-to-git-repository</code>: path of the file relatively to the folder defined by <code>local-git-repository-path</code> attribute.</p>
+</li>
+<li>
+<p><code>file-relative-to-gradle-projectdir</code>: path of the file relatively to the folder defined by <code>gradle-projectdir</code> attribute.</p>
+</li>
+<li>
+<p><code>file-relative-to-gradle-rootdir</code>: path of the file relatively to the folder defined by <code>gradle-rootdir</code> attribute.</p>
+</li>
+<li>
+<p><code>file-absolute-with-leading-slash</code>: absolute path of the file with a leading slash.</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>Examples setup:</p>
+</div>
+<div class="listingblock">
+<div class="title">Listing 5. display a link to open the file in vscode</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="adoc">dynamic-include-display-view-source : true
+dynamic-include-view-source-link-text : edit in vscode
+dynamic-include-view-source-link-pattern : vscode://file{file-absolute-with-leading-slash}.</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Listing 6. display a link to see the file in GitHub</div>
+<div class="content">
+<pre class="CodeRay highlight"><code data-lang="adoc">dynamic-include-display-view-source : true
+dynamic-include-view-source-link-text : view in github
+dynamic-include-view-source-link-pattern : https://github.com/jmini/asciidoctorj-dynamic-include/blob/HEAD/{file-relative-to-gradle-rootdir}</code></pre>
+</div>
 </div>
 </div>
 </div>
@@ -754,7 +1029,7 @@ Your <code>&lt;build&gt;</code> section could looks like this:</p>
 <p>The <code>fr.jmini.asciidoctorj:dynamic-include</code> jar can be declared as dependency of the <code>asciidoctor</code> task:</p>
 </div>
 <div class="listingblock">
-<div class="title">Listing 3. Configuration of the asciidoctor task in a gradle build</div>
+<div class="title">Listing 7. Configuration of the asciidoctor task in a gradle build</div>
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="gralde">asciidoctor {
     configurations 'asciidoctorExtensions'
@@ -805,12 +1080,12 @@ Your <code>&lt;build&gt;</code> section could looks like this:</p>
 <p>The library is hosted on maven central.</p>
 </div>
 <div class="listingblock">
-<div class="title">Listing 4. Maven coordinates of the library</div>
+<div class="title">Listing 8. Maven coordinates of the library</div>
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="xml"><span class="tag">&lt;dependency&gt;</span>
   <span class="tag">&lt;groupId&gt;</span>fr.jmini.asciidoctorj<span class="tag">&lt;/groupId&gt;</span>
   <span class="tag">&lt;artifactId&gt;</span>dynamic-include<span class="tag">&lt;/artifactId&gt;</span>
-  <span class="tag">&lt;version&gt;</span>2.1.1<span class="tag">&lt;/version&gt;</span>
+  <span class="tag">&lt;version&gt;</span>2.1.2<span class="tag">&lt;/version&gt;</span>
 <span class="tag">&lt;/dependency&gt;</span></code></pre>
 </div>
 </div>
@@ -947,8 +1222,8 @@ ssh-add ~/.ssh/id_rsa</pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Version 2.1.1<br>
-Last updated 2021-10-21 12:05:04 +0200
+Version 2.1.2<br>
+Last updated 2021-12-12 09:01:16 +0100
 </div>
 </div>
 </body>
