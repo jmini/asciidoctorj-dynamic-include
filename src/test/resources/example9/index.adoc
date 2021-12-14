@@ -1,7 +1,8 @@
 :idprefix: =
 :idseparator: -
-ifndef::root[:root: ./]
-ifndef::other[:other: {root}other/]
+ifndef::root[:root: ../]
+ifndef::base[:base: ./]
+ifndef::other[:other: {base}other/]
 :bar: ../other
 
 == Example 9

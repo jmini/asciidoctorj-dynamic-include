@@ -1,7 +1,8 @@
 :idprefix: =
 :idseparator: -
-ifndef::root[:root: ../]
-ifndef::other[:other: {root}other/]
+ifndef::root[:root: ../../]
+ifndef::base[:base: ../]
+ifndef::other[:other: {base}other/]
 
 == Page B
 
@@ -10,7 +11,9 @@ ifndef::other[:other: {root}other/]
 * link to <<pageA.adoc#=my-title-2, title 2>>
 * link to <<pageB.adoc#=my-title, title 8>>
 * link to <<pageB.adoc#=my-title-2, title 9>>
-
+* link to <<pageB.adoc#>>
+* link to <<{base}/pages/pageB.adoc#>>
+* link to <<{root}/example9/pages/pageB.adoc#>>
 
 Foo
 
