@@ -25,6 +25,10 @@ Lorem 8
 
 Ipsum 8
 
+==== Foo [[bar]]
+
+Dolor 8
+
 === Section 9
 
 Lorem 9

@@ -17,6 +17,9 @@ ifndef::other[:other: {base}other/]
 * link to <<pageB.adoc#>>
 * link to <<{base}/pages/pageB.adoc#>>
 * link to <<{root}/example9/pages/pageB.adoc#>>
+* link to <<pageB.adoc#bar>>
+* link to <<pageC.adoc#>>
+* link to <<pageC.adoc#baz>>
 
 Foo
 
