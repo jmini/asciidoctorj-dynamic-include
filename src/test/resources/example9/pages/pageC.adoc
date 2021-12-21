@@ -1,0 +1,9 @@
+:idprefix: =
+:idseparator: -
+ifndef::root[:root: ../../]
+ifndef::base[:base: ../]
+ifndef::other[:other: {base}other/]
+
+== Page [[baz]]
+
+This is baz

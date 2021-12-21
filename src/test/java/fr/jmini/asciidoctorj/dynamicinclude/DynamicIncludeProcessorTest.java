@@ -542,6 +542,8 @@ class DynamicIncludeProcessorTest {
         assertThat(DynamicIncludeProcessor.computeTitleId("My Title", "_", "-", Collections.singletonList("_my-title"))).isEqualTo("_my-title-2");
         assertThat(DynamicIncludeProcessor.computeTitleId("My Title", "_", "-", Arrays.asList("_my-title", "_my-title-2"))).isEqualTo("_my-title-3");
         assertThat(DynamicIncludeProcessor.computeTitleId("My Title", "_", "-", Arrays.asList("_my-title", "_my-title-2", "_my-title-3"))).isEqualTo("_my-title-4");
+
+        assertThat(DynamicIncludeProcessor.computeTitleId("My Title [[foo]]", "_", "-", Collections.emptyList())).isEqualTo("foo");
     }
 
     @Test

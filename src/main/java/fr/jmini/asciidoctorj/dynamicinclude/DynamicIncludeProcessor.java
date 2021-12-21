@@ -40,6 +40,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
 
     private static final SubstringFinder DOUBLE_ANGLED_BRACKET_FINDER = SubstringFinder.define("<<", ">>");
     private static final SubstringFinder SINGLE_BRACKET_FINDER = SubstringFinder.define("[", "]");
+    private static final SubstringFinder DOUBLE_BRACKET_FINDER = SubstringFinder.define("[[", "]]");
     private static final SubstringFinder SINGLE_CURLY_BRACKET_FINDER = SubstringFinder.define("{", "}");
 
     public DynamicIncludeProcessor() {
@@ -331,6 +332,12 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
     }
 
     public static String computeTitleId(String text, String idprefix, String idseparator, List<String> localExistingAnchors) {
+        Optional<Range> find = DOUBLE_BRACKET_FINDER.nextRange(text);
+        if (find.isPresent()) {
+            Range range = find.get();
+            return text.substring(range.getContentStart(), range.getContentEnd());
+        }
+
         StringBuilder sb = new StringBuilder();
         if (idprefix != null) {
             sb.append(idprefix);
