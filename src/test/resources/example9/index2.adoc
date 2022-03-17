@@ -1,0 +1,12 @@
+:idprefix: =
+:idseparator: -
+ifndef::root[:root: ../]
+ifndef::base[:base: ./]
+ifndef::other[:other: {base}other/]
+:bar: ../other
+:dynamic-include-external-xref-as-text: true
+
+== Example 9 (xref as text)
+
+include::dynamic:pages/*.adoc[]
+

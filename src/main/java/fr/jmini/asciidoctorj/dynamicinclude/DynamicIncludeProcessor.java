@@ -494,7 +494,7 @@ public class DynamicIncludeProcessor extends IncludeProcessor {
                 if (!Files.exists(file)) {
                     file = currentFile.getPath()
                             .getParent()
-                            .resolve(fileName);
+                            .resolve(subpath);
                 }
                 file = file.normalize();
             }
